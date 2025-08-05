@@ -1,0 +1,8 @@
+*.jsonl
+video/*
+*.mp4
+fixed/*
+*.json
+*.csv
+run_batch.py
+.ipynb_checkpoints/*
