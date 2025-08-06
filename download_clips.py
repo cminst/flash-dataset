@@ -4,8 +4,9 @@ import sys
 import json
 import yt_dlp
 import subprocess
+import argparse
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List
 from rich import box
 from rich.console import Console, Group
 from rich.live import Live
@@ -13,13 +14,9 @@ from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
 from rich.table import Table
 from rich.panel import Panel
 from rich.prompt import Prompt
-from rich.style import Style
-from utils import download_youtube_clip
 from rich.text import Text
 
 console = Console()
-ERRORS = []
-PROCESSED = 0
 
 def get_folder(prompt: str, default: str) -> Path:
     """Get folder path from user with validation"""
@@ -55,14 +52,12 @@ def get_folder(prompt: str, default: str) -> Path:
 
 def extract_video_id(video_path: str) -> str:
     """Extract video ID from 'video' field path"""
-    # Example: 'video/v_Ffi7vDa3C2I.mp4' -> 'Ffi7vDa3C2I'
     filename = Path(video_path).name
     if filename.endswith('.mp4'):
         base = filename[:-4]
     else:
         base = filename
-    
-    # Remove 'v_' prefix if present
+
     if base.startswith('v_'):
         return base[2:]
     return base
@@ -91,7 +86,7 @@ def load_tasks(jsonl_path: str) -> List[Dict]:
         console.print(f"[red]Error loading tasks: {str(e)}[/red]")
         sys.exit(1)
 
-def create_progress_display(total: int) -> Tuple[Progress, Text]:
+def create_progress_display(total: int) -> Progress:
     """Create progress tracking components"""
     progress = Progress(
         TextColumn("[progress.description]{task.description}"),
@@ -102,27 +97,18 @@ def create_progress_display(total: int) -> Tuple[Progress, Text]:
         console=console,
         transient=False,
     )
-    
-    stats = Text.assemble(
-        ("Processed: ", "bold"),
-        ("0", "cyan"),
-        (" / ", "bold"),
-        (str(total), "cyan"),
-        (" • Failed: ", "bold"),
-        ("0", "red"),
-        ("\n"),
-        ("Current: ", "bold"),
-        ("-", "italic"),
-    )
-    
-    return progress, stats
+    return progress
 
-def process_task(task: Dict, output_dir: Path) -> bool:
-    """Process single video download task"""
-    global PROCESSED, ERRORS
+def process_task(task: Dict, output_dir: Path, resume: bool) -> bool:
+    """Process a single video download task"""
     output_path = output_dir / task['output_filename']
-    
+
+    if resume and output_path.exists():
+        console.print(f"[dim]Skipping existing file: {task['output_filename']}[/dim]")
+        return True  # already downloaded
+
     try:
+        from utils import download_youtube_clip
         download_youtube_clip(
             video_id=task['video_id'],
             start_sec=task['start_sec'],
@@ -131,27 +117,14 @@ def process_task(task: Dict, output_dir: Path) -> bool:
         )
         return True
     except Exception as e:
-        ERRORS.append((task['output_filename'], str(e)))
-        return False
-    finally:
-        PROCESSED += 1
-
-def update_display(progress, stats_task, task_name: str = "-"):
-    """Update progress display components"""
-    stats_text = Text.assemble(
-        ("Processed: ", "bold"),
-        (str(PROCESSED), "cyan"),
-        (" / ", "bold"),
-        (str(progress.tasks[0].total), "cyan"),
-        (" • Failed: ", "bold"),
-        (str(len(ERRORS)), "red"),
-        ("\n"),
-        ("Current: ", "bold"),
-        (task_name, "italic magenta"),
-    )
-    stats_task.update(stats_text)
+        console.print(f"[red]Error processing {task['output_filename']}: {str(e)}[/red]")
+        raise  # stop processing immediately
 
 def main():
+    parser = argparse.ArgumentParser(description="YouTube Clip Downloader")
+    parser.add_argument("--resume", action="store_true", help="Skip already downloaded clips")
+    args = parser.parse_args()
+
     # Verify dependencies
     try:
         subprocess.run(["ffmpeg", "-version"], 
@@ -166,7 +139,7 @@ def main():
     # Get user input
     input_file = "flash_dataset_unlabelled_9.2k.jsonl"
     output_dir = get_folder("Output directory for clips", "downloaded_clips")
-    
+
     # Load tasks
     tasks = load_tasks(input_file)
     total = len(tasks)
@@ -174,73 +147,92 @@ def main():
     if total == 0:
         console.print("[yellow]No tasks found in dataset[/yellow]")
         sys.exit(0)
-    
-    # Prepare progress display
-    progress, stats = create_progress_display(total)
+
+    # Progress display
+    progress = create_progress_display(total)
     task_id = progress.add_task("Downloading clips", total=total)
-    
-    # Process clips with live display
+
+    # Live UI
+    stats_text = Text.assemble(
+        ("Processed: ", "bold"),
+        ("0", "cyan"),
+        (" / ", "bold"),
+        (str(total), "cyan"),
+        (" • Failed: 0", "bold red"),
+        ("\nCurrent: ", "bold"),
+        ("-", "italic"),
+    )
+
     with Live(
         Group(
-            Panel(stats, title="Download Progress", border_style="blue", box=box.ROUNDED),
+            Panel(stats_text, title="Download Progress", border_style="blue", box=box.ROUNDED),
             progress
         ),
         console=console,
         refresh_per_second=10
     ) as live:
-        for task in tasks:
-            # Update current file
-            update_display(progress, live, task['output_filename'])
-            
-            # Process clip
-            success = process_task(task, output_dir)
-            
-            # Update progress bar
-            progress.update(task_id, advance=1, refresh=True)
-        
-        # Final update
-        update_display(progress, live)
+
+        completed = 0
+        failed = 0
+
+        try:
+            for task in tasks:
+                # Update live display with current clip
+                current_status = Text.assemble(
+                    ("Processed: ", "bold"),
+                    (str(completed), "cyan"),
+                    (" / ", "bold"),
+                    (str(total), "cyan"),
+                    (" • Failed: ", "bold"),
+                    (str(failed), "red"),
+                    ("\nCurrent: ", "bold"),
+                    (task['output_filename'], "italic magenta"),
+                )
+                live.update(Group(
+                    Panel(current_status, title="Download Progress", border_style="blue", box=box.ROUNDED),
+                    progress
+                ))
+
+                # Process the task
+                if process_task(task, output_dir, args.resume):
+                    completed += 1
+                else:
+                    failed += 1
+                progress.update(task_id, advance=1, refresh=True)
+
+        except Exception as e:
+            # Stop processing immediately
+            progress.update(task_id, refresh=True)
+            console.print(f"\n[red bold]Stopping download due to error:[/red bold] {str(e)}")
+            sys.exit(1)
+
+        # Final status update
+        final_status = Text.assemble(
+            ("Processed: ", "bold"),
+            (str(completed), "cyan"),
+            (" / ", "bold"),
+            (str(total), "cyan"),
+            (" • Failed: ", "bold"),
+            (str(failed), "red"),
+            ("\nCurrent: Done", "bold green"),
+        )
+        live.update(Group(
+            Panel(final_status, title="Download Progress", border_style="blue", box=box.ROUNDED),
+            progress
+        ))
         progress.update(task_id, completed=total, refresh=True)
-    
-    # Show summary
+
     console.print("\n[bold]Download Complete:[/bold]")
     console.print(f" • Total Clips: [cyan]{total}[/cyan]")
-    console.print(f" • Successfully Downloaded: [green]{total - len(ERRORS)}[/green]")
-    
-    if ERRORS:
-        console.print(f" • Failed: [red]{len(ERRORS)}[/red]\n")
-        
-        error_table = Table(
-            title="Failed Downloads", 
-            box=box.ROUNDED,
-            show_header=True,
-            header_style="bold magenta"
-        )
-        error_table.add_column("File", style="cyan", width=40)
-        error_table.add_column("Error", style="red", width=60)
-        
-        for filename, error in ERRORS[:5]:
-            error_table.add_row(
-                filename, 
-                error[:70] + "..." if len(error) > 70 else error
-            )
-        
-        if len(ERRORS) > 5:
-            console.print(error_table)
-            console.print(f"[yellow]... and {len(ERRORS) - 5} more errors (check log for details)[/yellow]")
-        else:
-            console.print(error_table)
-        
-        # Save full error log
-        log_path = output_dir / "download_errors.log"
-        with open(log_path, "w") as f:
-            for filename, error in ERRORS:
-                f.write(f"=== {filename} ===\n{error}\n\n")
-        
-        console.print(f"\n[italic]Full error log saved to: {log_path}[/italic]")
-    else:
+    console.print(f" • Successfully Downloaded: [green]{completed}[/green]")
+    console.print(f" • Failed: [red]{failed}[/red]")
+
+    if failed == 0:
         console.print("\n[green]All clips downloaded successfully! 🎉[/green]")
-    
+    else:
+        console.print("\n[red]Some downloads failed. Exiting.[/red]")
+        sys.exit(1)
+
     console.print(f"\n[bold]Downloaded clips saved to:[/bold] {output_dir}")
 
 if __name__ == "__main__":

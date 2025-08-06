@@ -94,6 +94,7 @@ def download_youtube_clip(
             "format": "bestvideo[ext=mp4]",  # video only, always MP4
             "outtmpl": str(tmp_path),
             "quiet": True,
+            "cookiefile": "ytc.txt"
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
@@ -109,6 +110,11 @@ def download_youtube_clip(
             "-c", "copy",                # avoid re-encoding
             str(output_file),
         ]
-        subprocess.run(ffmpeg_cmd, check=True)
+        subprocess.run(
+            ffmpeg_cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True
+        )
 
     return output_file
