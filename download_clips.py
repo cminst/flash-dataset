@@ -117,8 +117,16 @@ def process_task(task: Dict, output_dir: Path, resume: bool) -> bool:
         )
         return True
     except Exception as e:
-        console.print(f"[red]Error processing {task['output_filename']}: {str(e)}[/red]")
-        raise  # stop processing immediately
+        error_msg = str(e).lower()
+        if "private" in error_msg:
+            console.print(f"[yellow]Skipping private video: {task['output_filename']}[/yellow]")
+            return False  # Mark as failed but continue
+        elif "not a bot" in error_msg:
+            console.print(f"[red bold]Stopping download due to bot detection error:[/red bold] {str(e)}")
+            raise  # Stop processing
+        else:
+            console.print(f"[red]Error processing {task['output_filename']}: {str(e)}[/red]")
+            return False  # Other error, also skip for now
 
 def main():
     parser = argparse.ArgumentParser(description="YouTube Clip Downloader")
@@ -201,10 +209,17 @@ def main():
                 progress.update(task_id, advance=1, refresh=True)
 
         except Exception as e:
-            # Stop processing immediately
-            progress.update(task_id, refresh=True)
-            console.print(f"\n[red bold]Stopping download due to error:[/red bold] {str(e)}")
-            sys.exit(1)
+            # Only stop on specific error ("not a bot")
+            error_msg = str(e).lower()
+            if "not a bot" in error_msg:
+                progress.update(task_id, refresh=True)
+                console.print(f"\n[red bold]Stopping download due to bot detection error:[/red bold] {str(e)}")
+                sys.exit(1)
+            else:
+                # For other exceptions, treat like task failure and continue
+                failed += 1
+                progress.update(task_id, advance=1, refresh=True)
+                console.print(f"[yellow]Continuing after unexpected error: {str(e)}[/yellow]")
 
         # Final status update
         final_status = Text.assemble(
