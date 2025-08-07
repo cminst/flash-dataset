@@ -231,8 +231,8 @@
 
         function updateUIForNewTask() {
             console.log("currentTask.video:", currentTask.video);
-            const videoFilename = currentTask.video.split('/').pop(); // Gets "v_WHYEBsWp5qY.mp4"
-            videoPlayer.src = `/video/${videoFilename}`; // Sets src to "/video/v_WHYEBsWp5qY.mp4"
+            const videoFilename = currentTask.video.split('/').pop();
+            videoPlayer.src = `/video/${videoFilename}`;
             captionInput.value = currentTask.revised_caption;
             Object.keys(labels).forEach(key => {
                 document.getElementById(`${key}_time`).textContent = '-';

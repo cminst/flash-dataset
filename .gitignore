@@ -10,3 +10,4 @@ run_batch.py
 *.mkv
 ytc.txt
 downloaded_clips/*
+*.tar.gz

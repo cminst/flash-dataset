@@ -1,10 +1,9 @@
-# prepare_dataset.py
 import pandas as pd
 from datasets import load_dataset
 import os
 
 DB_FILE = 'labeling_tasks.csv'
-VIDEO_DIR = 'video'
+VIDEO_DIR = 'downloaded_clips'
 
 def run():
     print("Checking if database file already exists...")
@@ -20,20 +19,17 @@ def run():
 
     print(f"Loaded {len(df)} rows.")
 
-    # --- Add columns for labeling state and new labels ---
+    # Add columns for labeling state and new labels
     # Status: unassigned, assigned, completed, bad_quality
     df['status'] = 'unassigned'
     df['assigned_to'] = None  # Could be used for user tracking later
     df['assigned_at'] = pd.NaT # For handling stale/abandoned tasks
     
-    # Your desired labels, initialized
     df['build_up'] = -1.0
     df['peak_start'] = -1.0
     df['peak_end'] = -1.0
     df['drop_off'] = -1.0
     
-    # Ensure video paths are correct for our structure
-    # The HF dataset already has the "video/" prefix, which is perfect.
     print("Verifying video paths...")
     if not all(df['video'].str.startswith(f'{VIDEO_DIR}/')):
         print(f"Warning: Some video paths do not seem to start with '{VIDEO_DIR}/'.")

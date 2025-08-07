@@ -1,4 +1,3 @@
-# main.py
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 import os
@@ -8,7 +7,7 @@ import threading
 from datetime import datetime, timedelta
 from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
-VIDEO_DIR = BASE_DIR / "video"          # absolute path
+VIDEO_DIR = BASE_DIR / "downloaded_clips"          # absolute path
 
 # --- Configuration ---
 DB_FILE = 'labeling_tasks.csv'
