@@ -693,13 +693,13 @@
                 document.getElementById('progress-bar').style.width = `${percentage}%`;
                 document.getElementById('progress-text').textContent = `${data.completed} / ${data.total} tasks completed (${percentage.toFixed(1)}%)`;
                 
-                // Calculate quality estimate
+                // Calculate quality estimate (percentage of labeled videos that are good)
                 const labeledCount = data.completed + data.bad_quality;
                 if (labeledCount > 0) {
-                    const badPercentage = (data.bad_quality / labeledCount) * 100;
-                    const estimatedBadTotal = (badPercentage / 100) * data.total;
-                    document.getElementById('quality-estimate').textContent = 
-                        `Quality estimate: ${badPercentage.toFixed(1)}% bad videos (${data.bad_quality}/${labeledCount} labeled) ≈ ${Math.round(estimatedBadTotal)} of ${data.total} total`;
+                    const goodPercentage = (data.completed / labeledCount) * 100;
+                    const estimatedGoodTotal = (goodPercentage / 100) * data.total;
+                    document.getElementById('quality-estimate').textContent =
+                        `Quality estimate: ${goodPercentage.toFixed(1)}% good videos (${data.completed}/${labeledCount} labeled) ≈ ${Math.round(estimatedGoodTotal)} of ${data.total} total`;
                 } else {
                     document.getElementById('quality-estimate').textContent = '';
                 }
