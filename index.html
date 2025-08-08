@@ -2,131 +2,568 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FLASH Video Labeling Tool</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-color: #f4f4f9;
+            --bg-color: #f0f4f8;
             --main-color: #ffffff;
-            --primary-text: #333;
-            --secondary-text: #555;
-            --accent-color: #007bff;
-            --accent-hover: #0056b3;
-            --danger-color: #dc3545;
-            --danger-hover: #c82333;
-            --success-color: #28a745;
-            --border-color: #ddd;
-            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+            --primary-text: #2d3748;
+            --secondary-text: #718096;
+            --accent-color: #4299e1;
+            --accent-hover: #3182ce;
+            --danger-color: #e53e3e;
+            --danger-hover: #c53030;
+            --success-color: #38a169;
+            --success-hover: #2f855a;
+            --warning-color: #ed8936;
+            --warning-hover: #dd6b20;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s ease;
         }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-color);
             color: var(--primary-text);
-            margin: 0;
+            line-height: 1.6;
             padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--main-color);
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #2b6cb0, #4299e1);
+            color: white;
+            padding: 20px 30px;
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
         }
-        .container {
-            width: 100%;
-            max-width: 800px;
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo i {
+            font-size: 28px;
+        }
+        
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        
+        .progress-section {
+            padding: 20px 30px;
             background: var(--main-color);
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: var(--shadow);
+            border-bottom: 1px solid var(--border-color);
         }
-        #progress-container {
-            width: 100%;
-            background-color: var(--border-color);
-            border-radius: 5px;
-            margin-bottom: 20px;
-            height: 10px;
+        
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
+        
+        #progress-bar-container {
+            flex: 1;
+            height: 12px;
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
         #progress-bar {
-            width: 0%;
             height: 100%;
             background-color: var(--success-color);
-            border-radius: 5px;
+            border-radius: 10px;
+            width: 0%;
             transition: width 0.5s ease-in-out;
         }
+        
         #progress-text {
-            text-align: center;
-            font-size: 0.9em;
+            font-size: 0.95rem;
             color: var(--secondary-text);
-            margin-bottom: 20px;
+            min-width: 180px;
+            text-align: right;
         }
-        h1, h3 { color: var(--primary-text); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
-        video { width: 100%; border-radius: 4px; }
-        textarea {
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .video-container {
+            position: relative;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        
+        video {
             width: 100%;
-            padding: 10px;
-            font-size: 1em;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            box-sizing: border-box; /* Important */
-            margin-top: 10px;
-            resize: vertical;
+            display: block;
+            background: #000;
         }
-        .controls-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin: 20px 0;
+        
+        .video-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
         }
-        button {
-            padding: 12px 20px;
-            font-size: 1em;
-            border-radius: 5px;
+        
+        .control-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            font-size: 0.95rem;
+            border-radius: 6px;
             border: none;
             cursor: pointer;
             color: white;
-            transition: background-color 0.2s;
+            background-color: var(--accent-color);
+            transition: var(--transition);
         }
-        .btn-mark { background-color: var(--accent-color); }
-        .btn-mark:hover { background-color: var(--accent-hover); }
-        #submit-btn { background-color: var(--success-color); font-weight: bold; }
-        #next-btn { background-color: var(--secondary-text); }
-        #delete-btn { background-color: var(--danger-color); }
-        #timestamps { margin-top: 20px; background: var(--bg-color); padding: 15px; border-radius: 4px; }
-        #timestamps p { margin: 5px 0; font-family: monospace; }
-        #status-message { margin-top: 20px; font-weight: bold; }
+        
+        .control-btn:hover {
+            background-color: var(--accent-hover);
+        }
+        
+        .control-btn i {
+            font-size: 1.1rem;
+        }
+        
+        .caption-section {
+            margin-bottom: 30px;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: var(--primary-text);
+            font-size: 1.3rem;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 15px;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            margin-top: 10px;
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+        }
+        
+        .timestamps-section {
+            margin-bottom: 30px;
+        }
+        
+        .timestamps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .timestamp-item {
+            background: #f7fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: var(--transition);
+        }
+        
+        .timestamp-item.active {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.2);
+        }
+        
+        .timestamp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .timestamp-title {
+            font-weight: 600;
+            color: var(--primary-text);
+        }
+        
+        .timestamp-value {
+            font-family: monospace;
+            font-size: 0.95rem;
+            color: var(--accent-color);
+            padding: 5px 10px;
+            background: rgba(66, 153, 225, 0.1);
+            border-radius: 4px;
+        }
+        
+        .timestamp-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .timestamp-btn {
+            flex: 1;
+            padding: 10px;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            background-color: var(--accent-color);
+            color: white;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .timestamp-btn:hover {
+            background-color: var(--accent-hover);
+        }
+        
+        .timestamp-btn i {
+            font-size: 0.9rem;
+        }
+        
+        .actions-section {
+            margin-top: 30px;
+        }
+        
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .action-btn {
+            padding: 14px 20px;
+            font-size: 1.05rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.06);
+        }
+        
+        .submit-btn {
+            background-color: var(--success-color);
+        }
+        
+        .submit-btn:hover {
+            background-color: var(--success-hover);
+        }
+        
+        .next-btn {
+            background-color: #718096;
+        }
+        
+        .next-btn:hover {
+            background-color: #4a5568;
+        }
+        
+        .delete-btn {
+            background-color: var(--danger-color);
+        }
+        
+        .delete-btn:hover {
+            background-color: var(--danger-hover);
+        }
+        
+        #status-message {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            background: rgba(66, 153, 225, 0.1);
+            border: 1px solid rgba(66, 153, 225, 0.2);
+            display: none;
+        }
+        
+        #status-message.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        #status-message.success {
+            background: rgba(56, 161, 105, 0.1);
+            border-color: rgba(56, 161, 105, 0.2);
+        }
+        
+        #status-message.error {
+            background: rgba(229, 62, 62, 0.1);
+            border-color: rgba(229, 62, 62, 0.2);
+        }
+        
+        #status-message.warning {
+            background: rgba(237, 137, 54, 0.1);
+            border-color: rgba(237, 137, 54, 0.2);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--secondary-text);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border-color);
+            background: #f7fafc;
+        }
+        
+        .keyboard-hint {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: var(--secondary-text);
+        }
+        
+        .key {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                border-radius: 8px;
+            }
+            
+            header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .section-header {
+                font-size: 1.2rem;
+            }
+            
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .timestamp-controls {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .timestamp-btn {
+                padding: 12px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Video Labeling Tool</h1>
-        <div id="progress-container"><div id="progress-bar"></div></div>
-        <div id="progress-text">Loading progress...</div>
-
-        <video id="video-player" controls></video>
+        <header>
+            <div class="logo">
+                <i class="fas fa-video"></i>
+                <h1>FLASH Video Labeling Tool</h1>
+            </div>
+            <div class="user-controls">
+                <button class="control-btn">
+                    <i class="fas fa-user"></i>
+                    <span>User Profile</span>
+                </button>
+            </div>
+        </header>
         
-        <h3>Caption to Edit</h3>
-        <textarea id="caption-input" rows="3"></textarea>
-        
-        <h3>Mark Timestamps</h3>
-        <div class="controls-grid">
-            <button class="btn-mark" onclick="markTime('build_up')">Mark Build Up</button>
-            <button class="btn-mark" onclick="markTime('peak_start')">Mark Peak Start</button>
-            <button class="btn-mark" onclick="markTime('peak_end')">Mark Peak End</button>
-            <button class="btn-mark" onclick="markTime('drop_off')">Mark Drop Off</button>
+        <div class="progress-section">
+            <div class="progress-container">
+                <div id="progress-bar-container">
+                    <div id="progress-bar"></div>
+                </div>
+                <div id="progress-text">0 / 0 tasks completed (0%)</div>
+            </div>
         </div>
         
-        <div id="timestamps">
-            <p>Build Up: <span id="build_up_time">-</span></p>
-            <p>Peak Start: <span id="peak_start_time">-</span></p>
-            <p>Peak End: <span id="peak_end_time">-</span></p>
-            <p>Drop Off: <span id="drop_off_time">-</span></p>
+        <div class="main-content">
+            <div class="video-container">
+                <video id="video-player" controls></video>
+                <div class="video-controls">
+                    <button class="control-btn" onclick="playPauseVideo()">
+                        <i class="fas fa-play"></i>
+                        <span>Play/Pause</span>
+                    </button>
+                    <button class="control-btn" onclick="resetVideo()">
+                        <i class="fas fa-redo"></i>
+                        <span>Reset</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="caption-section">
+                <div class="section-header">
+                    <i class="fas fa-edit"></i>
+                    <h3>Caption to Edit</h3>
+                </div>
+                <textarea id="caption-input" placeholder="Enter or edit the caption for this video..."></textarea>
+            </div>
+            
+            <div class="timestamps-section">
+                <div class="section-header">
+                    <i class="fas fa-clock"></i>
+                    <h3>Mark Timestamps</h3>
+                </div>
+                <div class="timestamps-grid">
+                    <div class="timestamp-item">
+                        <div class="timestamp-header">
+                            <div class="timestamp-title">Build Up</div>
+                            <div class="timestamp-value" id="build_up_time">-</div>
+                        </div>
+                        <div class="timestamp-controls">
+                            <button class="timestamp-btn" onclick="markTime('build_up')">
+                                <i class="fas fa-flag"></i>
+                                <span>Mark</span>
+                            </button>
+                            <button class="timestamp-btn" onclick="goToTime('build_up')">
+                                <i class="fas fa-play-circle"></i>
+                                <span>Go To</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="timestamp-item">
+                        <div class="timestamp-header">
+                            <div class="timestamp-title">Peak Start</div>
+                            <div class="timestamp-value" id="peak_start_time">-</div>
+                        </div>
+                        <div class="timestamp-controls">
+                            <button class="timestamp-btn" onclick="markTime('peak_start')">
+                                <i class="fas fa-flag"></i>
+                                <span>Mark</span>
+                            </button>
+                            <button class="timestamp-btn" onclick="goToTime('peak_start')">
+                                <i class="fas fa-play-circle"></i>
+                                <span>Go To</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="timestamp-item">
+                        <div class="timestamp-header">
+                            <div class="timestamp-title">Peak End</div>
+                            <div class="timestamp-value" id="peak_end_time">-</div>
+                        </div>
+                        <div class="timestamp-controls">
+                            <button class="timestamp-btn" onclick="markTime('peak_end')">
+                                <i class="fas fa-flag"></i>
+                                <span>Mark</span>
+                            </button>
+                            <button class="timestamp-btn" onclick="goToTime('peak_end')">
+                                <i class="fas fa-play-circle"></i>
+                                <span>Go To</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="timestamp-item">
+                        <div class="timestamp-header">
+                            <div class="timestamp-title">Drop Off</div>
+                            <div class="timestamp-value" id="drop_off_time">-</div>
+                        </div>
+                        <div class="timestamp-controls">
+                            <button class="timestamp-btn" onclick="markTime('drop_off')">
+                                <i class="fas fa-flag"></i>
+                                <span>Mark</span>
+                            </button>
+                            <button class="timestamp-btn" onclick="goToTime('drop_off')">
+                                <i class="fas fa-play-circle"></i>
+                                <span>Go To</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="actions-section">
+                <div class="actions-grid">
+                    <button class="action-btn submit-btn" onclick="submitLabels()">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Submit Labels</span>
+                    </button>
+                    <button class="action-btn next-btn" onclick="getNextTask()">
+                        <i class="fas fa-forward"></i>
+                        <span>Skip & Get Next</span>
+                    </button>
+                    <button class="action-btn delete-btn" onclick="deleteTask()">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>Mark as Bad Quality</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="status-message"></div>
         </div>
         
-        <hr style="margin: 25px 0;">
-        
-        <div class="controls-grid">
-            <button id="submit-btn" onclick="submitLabels()">Submit Labels</button>
-            <button id="next-btn" onclick="getNextTask()">Skip & Get Next</button>
-            <button id="delete-btn" onclick="deleteTask()">Mark as Bad Quality</button>
-        </div>
-
-        <p id="status-message"></p>
+        <footer>
+            <div>FLASH Video Labeling Tool v1.2</div>
+            <div class="keyboard-hint">
+                <i class="fas fa-keyboard"></i>
+                <span>Keyboard shortcuts: <span class="key">1</span> Build Up, <span class="key">2</span> Peak Start, <span class="key">3</span> Peak End, <span class="key">4</span> Drop Off</span>
+            </div>
+        </footer>
     </div>
 
     <script>
@@ -136,9 +573,38 @@
         
         let currentTask = null;
         let labels = {};
+        let activeTimestamp = null;
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            if (!currentTask) return;
+            
+            switch(event.key) {
+                case '1':
+                    markTime('build_up');
+                    event.preventDefault();
+                    break;
+                case '2':
+                    markTime('peak_start');
+                    event.preventDefault();
+                    break;
+                case '3':
+                    markTime('peak_end');
+                    event.preventDefault();
+                    break;
+                case '4':
+                    markTime('drop_off');
+                    event.preventDefault();
+                    break;
+                case ' ':
+                    playPauseVideo();
+                    event.preventDefault();
+                    break;
+            }
+        });
 
         async function getNextTask() {
-            statusMessage.textContent = 'Loading next video...';
+            showMessage('Loading next video...', 'info');
             clearUI();
             try {
                 const response = await fetch('/get-next-task');
@@ -149,16 +615,16 @@
                 currentTask = await response.json();
                 resetLabels();
                 updateUIForNewTask();
-                statusMessage.textContent = `Labeling video row_id: ${currentTask.row_id}`;
+                showMessage(`Labeling video row_id: ${currentTask.row_id}`, 'info');
             } catch (error) {
-                statusMessage.textContent = `Error: ${error.message}`;
+                showMessage(`Error: ${error.message}`, 'error');
                 videoPlayer.src = '';
             }
         }
 
         async function submitLabels() {
-            if (!currentTask) return alert("No task loaded.");
-            if (Object.values(labels).some(v => v < 0)) return alert("Please mark all four timestamps.");
+            if (!currentTask) return showMessage("No task loaded.", 'error');
+            if (Object.values(labels).some(v => v < 0)) return showMessage("Please mark all four timestamps.", 'warning');
 
             const submissionData = {
                 row_id: currentTask.row_id,
@@ -174,19 +640,21 @@
                 });
                 const data = await response.json();
                 if (data.status === 'success') {
-                    statusMessage.textContent = `Submitted row_id: ${data.row_id}. Getting next task...`;
+                    showMessage(`Submitted row_id: ${data.row_id}. Loading next task...`, 'success');
                     await updateProgress();
-                    getNextTask();
+                    setTimeout(() => {
+                        getNextTask();
+                    }, 1500);
                 } else {
                     throw new Error('Submission failed on server.');
                 }
             } catch (error) {
-                statusMessage.textContent = `Error: ${error}`;
+                showMessage(`Error: ${error}`, 'error');
             }
         }
 
         async function deleteTask() {
-            if (!currentTask) return alert("No task loaded.");
+            if (!currentTask) return showMessage("No task loaded.", 'error');
             if (!confirm(`Are you sure you want to mark this video (row_id: ${currentTask.row_id}) as bad quality? This action cannot be undone.`)) {
                 return;
             }
@@ -195,14 +663,16 @@
                 const response = await fetch(`/delete-task/${currentTask.row_id}`, { method: 'POST' });
                 const data = await response.json();
                 if (data.status === 'deleted') {
-                    statusMessage.textContent = `Marked row_id: ${data.row_id} as bad. Getting next task...`;
+                    showMessage(`Marked row_id: ${data.row_id} as bad quality. Loading next task...`, 'success');
                     await updateProgress();
-                    getNextTask();
+                    setTimeout(() => {
+                        getNextTask();
+                    }, 1500);
                 } else {
                     throw new Error('Deletion failed on server.');
                 }
             } catch (error) {
-                statusMessage.textContent = `Error: ${error}`;
+                showMessage(`Error: ${error}`, 'error');
             }
         }
 
@@ -219,10 +689,43 @@
         }
         
         function markTime(labelType) {
-            if (!currentTask) return alert("Please get a task first!");
+            if (!currentTask) return showMessage("Please get a task first!", 'warning');
+            
             const currentTime = videoPlayer.currentTime;
             labels[labelType] = currentTime;
-            document.getElementById(`${labelType}_time`).textContent = currentTime.toFixed(3) + 's';
+            
+            const displayTime = currentTime.toFixed(3) + 's';
+            document.getElementById(`${labelType}_time`).textContent = displayTime;
+            
+            // Highlight the active timestamp
+            if (activeTimestamp) {
+                document.querySelector(`.${activeTimestamp}-item`).classList.remove('active');
+            }
+            document.querySelector(`.timestamp-item`).classList.add('active');
+            activeTimestamp = labelType;
+        }
+
+        function goToTime(labelType) {
+            if (!currentTask || labels[labelType] < 0) {
+                showMessage(`Please mark ${labelType.replace('_', ' ')} timestamp first`, 'warning');
+                return;
+            }
+            
+            videoPlayer.currentTime = labels[labelType];
+            videoPlayer.play();
+        }
+
+        function playPauseVideo() {
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+            } else {
+                videoPlayer.pause();
+            }
+        }
+
+        function resetVideo() {
+            videoPlayer.currentTime = 0;
+            videoPlayer.pause();
         }
 
         function resetLabels() {
@@ -230,13 +733,20 @@
         }
 
         function updateUIForNewTask() {
-            console.log("currentTask.video:", currentTask.video);
             const videoFilename = currentTask.video.split('/').pop();
             videoPlayer.src = `/video/${videoFilename}`;
-            captionInput.value = currentTask.revised_caption;
+            captionInput.value = currentTask.revised_caption || '';
+            
+            // Reset timestamps display
             Object.keys(labels).forEach(key => {
                 document.getElementById(`${key}_time`).textContent = '-';
             });
+            
+            // Remove active states
+            document.querySelectorAll('.timestamp-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            activeTimestamp = null;
         }
         
         function clearUI() {
@@ -244,9 +754,44 @@
             captionInput.value = '';
             videoPlayer.src = '';
             resetLabels();
+            
+            // Reset timestamps display
             Object.keys(labels).forEach(key => {
                 document.getElementById(`${key}_time`).textContent = '-';
             });
+            
+            // Remove active states
+            document.querySelectorAll('.timestamp-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            activeTimestamp = null;
+        }
+
+        function showMessage(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = '';
+            statusMessage.classList.add('show');
+            
+            switch(type) {
+                case 'success':
+                    statusMessage.classList.add('success');
+                    break;
+                case 'error':
+                    statusMessage.classList.add('error');
+                    break;
+                case 'warning':
+                    statusMessage.classList.add('warning');
+                    break;
+                default:
+                    statusMessage.classList.add('info');
+            }
+            
+            // Auto-hide success messages after 3 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusMessage.classList.remove('show');
+                }, 3000);
+            }
         }
 
         // Initial load
