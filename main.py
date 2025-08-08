@@ -6,6 +6,7 @@ from pydantic import BaseModel
 import threading
 from datetime import datetime, timedelta
 from pathlib import Path
+import json
 
 BASE_DIR = Path(__file__).resolve().parent
 VIDEO_DIR = BASE_DIR / "downloaded_clips"
@@ -18,13 +19,18 @@ lock = threading.Lock()
 app = FastAPI()
 
 
-class Label(BaseModel):
-    row_id: int
-    revised_caption: str
+class Peak(BaseModel):
     build_up: float
     peak_start: float
     peak_end: float
     drop_off: float
+    caption: str | None = None
+
+
+class Label(BaseModel):
+    row_id: int
+    revised_caption: str | None = None
+    peaks: list[Peak]
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -78,6 +84,14 @@ def get_next_task():
         df.to_csv(DB_FILE, index=False)
 
         task = df.loc[task_index].where(pd.notnull(df.loc[task_index]), None).to_dict()
+        # Parse peaks JSON if present
+        if 'peaks' in task and task['peaks'] not in (None, ''):
+            try:
+                task['peaks'] = json.loads(task['peaks'])
+            except Exception:
+                task['peaks'] = []
+        else:
+            task['peaks'] = []
         return task
 
 
@@ -92,12 +106,24 @@ def submit_labels(label: Label):
                                 detail=f"Row ID {label.row_id} not found.")
         
         idx = df.index[mask][0]
+        # Ensure peaks column exists
+        if 'peaks' not in df.columns:
+            df['peaks'] = None
 
-        df.loc[idx, 'revised_caption'] = label.revised_caption
-        df.loc[idx, 'build_up'] = label.build_up
-        df.loc[idx, 'peak_start'] = label.peak_start
-        df.loc[idx, 'peak_end'] = label.peak_end
-        df.loc[idx, 'drop_off'] = label.drop_off
+        # Store peaks JSON
+        df.loc[idx, 'peaks'] = json.dumps([p.dict() for p in label.peaks])
+
+        # Optional: store legacy single fields from first peak for compatibility
+        if len(label.peaks) > 0:
+            first = label.peaks[0]
+            df.loc[idx, 'build_up'] = first.build_up
+            df.loc[idx, 'peak_start'] = first.peak_start
+            df.loc[idx, 'peak_end'] = first.peak_end
+            df.loc[idx, 'drop_off'] = first.drop_off
+
+        # Revised caption at row level (optional overall caption)
+        if 'revised_caption' in df.columns:
+            df.loc[idx, 'revised_caption'] = label.revised_caption
         df.loc[idx, 'status'] = 'completed'
         df.loc[idx, 'assigned_at'] = None
 

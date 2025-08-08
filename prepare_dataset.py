@@ -29,6 +29,8 @@ def run():
     df['peak_start'] = -1.0
     df['peak_end'] = -1.0
     df['drop_off'] = -1.0
+    # Optional JSON column for multiple peaks per video (list of dicts)
+    df['peaks'] = None
     
     print("Verifying video paths...")
     if not all(df['video'].str.startswith(f'{VIDEO_DIR}/')):

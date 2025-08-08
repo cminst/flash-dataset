@@ -198,6 +198,31 @@
         .timestamps-section {
             margin-bottom: 30px;
         }
+
+        /* Multi-peak styles */
+        .peaks-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .add-peak-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            background: var(--accent-color);
+            color: #fff;
+            cursor: pointer;
+        }
+        .add-peak-btn:hover { background: var(--accent-hover); }
+        .peaks-container { display: flex; flex-direction: column; gap: 16px; }
+        .peak-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; background: #f7fafc; }
+        .peak-card.active { border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.2); }
+        .peak-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .peak-title { font-weight: 600; }
+        .delete-peak-btn { background: var(--danger-color); color: #fff; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+        .delete-peak-btn:hover { background: var(--danger-hover); }
+        .peak-caption { margin-top: 8px; }
         
         .timestamps-grid {
             display: grid;
@@ -473,77 +498,13 @@
             <div class="timestamps-section">
                 <div class="section-header">
                     <i class="fas fa-clock"></i>
-                    <h3>Mark Timestamps</h3>
+                    <h3>Peaks</h3>
                 </div>
-                <div class="timestamps-grid">
-                    <div class="timestamp-item">
-                        <div class="timestamp-header">
-                            <div class="timestamp-title">Build Up</div>
-                            <div class="timestamp-value" id="build_up_time">-</div>
-                        </div>
-                        <div class="timestamp-controls">
-                            <button class="timestamp-btn" onclick="markTime('build_up')">
-                                <i class="fas fa-flag"></i>
-                                <span>Mark</span>
-                            </button>
-                            <button class="timestamp-btn" onclick="goToTime('build_up')">
-                                <i class="fas fa-play-circle"></i>
-                                <span>Go To</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="timestamp-item">
-                        <div class="timestamp-header">
-                            <div class="timestamp-title">Peak Start</div>
-                            <div class="timestamp-value" id="peak_start_time">-</div>
-                        </div>
-                        <div class="timestamp-controls">
-                            <button class="timestamp-btn" onclick="markTime('peak_start')">
-                                <i class="fas fa-flag"></i>
-                                <span>Mark</span>
-                            </button>
-                            <button class="timestamp-btn" onclick="goToTime('peak_start')">
-                                <i class="fas fa-play-circle"></i>
-                                <span>Go To</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="timestamp-item">
-                        <div class="timestamp-header">
-                            <div class="timestamp-title">Peak End</div>
-                            <div class="timestamp-value" id="peak_end_time">-</div>
-                        </div>
-                        <div class="timestamp-controls">
-                            <button class="timestamp-btn" onclick="markTime('peak_end')">
-                                <i class="fas fa-flag"></i>
-                                <span>Mark</span>
-                            </button>
-                            <button class="timestamp-btn" onclick="goToTime('peak_end')">
-                                <i class="fas fa-play-circle"></i>
-                                <span>Go To</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="timestamp-item">
-                        <div class="timestamp-header">
-                            <div class="timestamp-title">Drop Off</div>
-                            <div class="timestamp-value" id="drop_off_time">-</div>
-                        </div>
-                        <div class="timestamp-controls">
-                            <button class="timestamp-btn" onclick="markTime('drop_off')">
-                                <i class="fas fa-flag"></i>
-                                <span>Mark</span>
-                            </button>
-                            <button class="timestamp-btn" onclick="goToTime('drop_off')">
-                                <i class="fas fa-play-circle"></i>
-                                <span>Go To</span>
-                            </button>
-                        </div>
-                    </div>
+                <div class="peaks-header">
+                    <div style="color: var(--secondary-text)">Add one card per peak</div>
+                    <button class="add-peak-btn" onclick="addPeak()"><i class="fas fa-plus"></i> Add Peak</button>
                 </div>
+                <div id="peaks-container" class="peaks-container"></div>
             </div>
             
             <div class="actions-section">
@@ -567,11 +528,7 @@
         </div>
         
         <footer>
-            <div>FLASH Video Labeling Tool v1.2</div>
-            <div class="keyboard-hint">
-                <i class="fas fa-keyboard"></i>
-                <span>Keyboard shortcuts: <span class="key">1</span> Build Up, <span class="key">2</span> Peak Start, <span class="key">3</span> Peak End, <span class="key">4</span> Drop Off</span>
-            </div>
+            <div>FLASH Video Labeling Tool v1.3</div>
         </footer>
     </div>
 
@@ -581,36 +538,8 @@
         const statusMessage = document.getElementById('status-message');
         
         let currentTask = null;
-        let labels = {};
-        let activeTimestamp = null;
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(event) {
-            if (!currentTask) return;
-            
-            switch(event.key) {
-                case '1':
-                    markTime('build_up');
-                    event.preventDefault();
-                    break;
-                case '2':
-                    markTime('peak_start');
-                    event.preventDefault();
-                    break;
-                case '3':
-                    markTime('peak_end');
-                    event.preventDefault();
-                    break;
-                case '4':
-                    markTime('drop_off');
-                    event.preventDefault();
-                    break;
-                case ' ':
-                    playPauseVideo();
-                    event.preventDefault();
-                    break;
-            }
-        });
+        let peaks = [];
+        let activePeakIndex = -1;
 
         async function getNextTask() {
             showMessage('Loading next video...', 'info');
@@ -633,12 +562,14 @@
 
         async function submitLabels() {
             if (!currentTask) return showMessage("No task loaded.", 'error');
-            if (Object.values(labels).some(v => v < 0)) return showMessage("Please mark all four timestamps.", 'warning');
+            if (peaks.length === 0) return showMessage("Please add at least one peak.", 'warning');
+            const hasIncomplete = peaks.some(p => p.build_up < 0 || p.peak_start < 0 || p.peak_end < 0 || p.drop_off < 0);
+            if (hasIncomplete) return showMessage("Please mark all four timestamps for each peak.", 'warning');
 
             const submissionData = {
                 row_id: currentTask.row_id,
                 revised_caption: captionInput.value,
-                ...labels
+                peaks: peaks
             };
 
             try {
@@ -709,30 +640,21 @@
             }
         }
         
-        function markTime(labelType) {
+        function markTime(labelType, index = null) {
             if (!currentTask) return showMessage("Please get a task first!", 'warning');
-            
+            if (index === null) index = activePeakIndex;
+            if (index < 0 || index >= peaks.length) return showMessage("Select a peak first.", 'warning');
             const currentTime = videoPlayer.currentTime;
-            labels[labelType] = currentTime;
-            
-            const displayTime = currentTime.toFixed(3) + 's';
-            document.getElementById(`${labelType}_time`).textContent = displayTime;
-            
-            // Highlight the active timestamp
-            if (activeTimestamp) {
-                document.querySelector(`.${activeTimestamp}-item`).classList.remove('active');
-            }
-            document.querySelector(`.timestamp-item`).classList.add('active');
-            activeTimestamp = labelType;
+            peaks[index][labelType] = currentTime;
+            renderPeaks();
         }
 
-        function goToTime(labelType) {
-            if (!currentTask || labels[labelType] < 0) {
-                showMessage(`Please mark ${labelType.replace('_', ' ')} timestamp first`, 'warning');
-                return;
-            }
-            
-            videoPlayer.currentTime = labels[labelType];
+        function goToTime(labelType, index = null) {
+            if (!currentTask) return showMessage("Please get a task first!", 'warning');
+            if (index === null) index = activePeakIndex;
+            if (index < 0 || index >= peaks.length) return showMessage("Select a peak first.", 'warning');
+            if (peaks[index][labelType] < 0) return showMessage(`Please mark ${labelType.replace('_', ' ')} first for Peak ${index+1}.`, 'warning');
+            videoPlayer.currentTime = peaks[index][labelType];
             videoPlayer.play();
         }
 
@@ -749,43 +671,36 @@
             videoPlayer.pause();
         }
 
-        function resetLabels() {
-            labels = { build_up: -1.0, peak_start: -1.0, peak_end: -1.0, drop_off: -1.0 };
-        }
+        function defaultPeak() { return { build_up: -1.0, peak_start: -1.0, peak_end: -1.0, drop_off: -1.0, caption: '' }; }
+        function resetPeaks() { peaks = []; activePeakIndex = -1; }
 
         function updateUIForNewTask() {
             const videoFilename = currentTask.video.split('/').pop();
             videoPlayer.src = `/video/${videoFilename}`;
             captionInput.value = currentTask.revised_caption || '';
-            
-            // Reset timestamps display
-            Object.keys(labels).forEach(key => {
-                document.getElementById(`${key}_time`).textContent = '-';
-            });
-            
-            // Remove active states
-            document.querySelectorAll('.timestamp-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            activeTimestamp = null;
+            // Initialize peaks from task or start with one blank
+            if (Array.isArray(currentTask.peaks) && currentTask.peaks.length > 0) {
+                peaks = currentTask.peaks.map(p => ({
+                    build_up: p.build_up ?? -1,
+                    peak_start: p.peak_start ?? -1,
+                    peak_end: p.peak_end ?? -1,
+                    drop_off: p.drop_off ?? -1,
+                    caption: p.caption || ''
+                }));
+            } else {
+                peaks = [ defaultPeak() ];
+            }
+            activePeakIndex = 0;
+            renderPeaks();
         }
         
         function clearUI() {
             currentTask = null;
             captionInput.value = '';
             videoPlayer.src = '';
-            resetLabels();
-            
-            // Reset timestamps display
-            Object.keys(labels).forEach(key => {
-                document.getElementById(`${key}_time`).textContent = '-';
-            });
-            
-            // Remove active states
-            document.querySelectorAll('.timestamp-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            activeTimestamp = null;
+            resetPeaks();
+            const container = document.getElementById('peaks-container');
+            if (container) container.innerHTML = '';
         }
 
         function showMessage(message, type) {
@@ -820,6 +735,94 @@
             updateProgress();
             getNextTask();
         };
+
+        // Peak management and rendering
+        function addPeak() {
+            peaks.push(defaultPeak());
+            activePeakIndex = peaks.length - 1;
+            renderPeaks();
+        }
+        function deletePeak(index) {
+            if (index < 0 || index >= peaks.length) return;
+            peaks.splice(index, 1);
+            if (peaks.length === 0) { peaks.push(defaultPeak()); }
+            activePeakIndex = Math.min(activePeakIndex, peaks.length - 1);
+            renderPeaks();
+        }
+        function selectPeak(index) {
+            activePeakIndex = index;
+            renderPeaks();
+        }
+        function updatePeakCaption(index, value) {
+            peaks[index].caption = value;
+        }
+        function fmt(t) { return t >= 0 ? t.toFixed(3) + 's' : '-'; }
+        function renderPeaks() {
+            const container = document.getElementById('peaks-container');
+            if (!container) return;
+            container.innerHTML = '';
+            peaks.forEach((p, i) => {
+                const card = document.createElement('div');
+                card.className = 'peak-card' + (i === activePeakIndex ? ' active' : '');
+                card.onclick = (e) => { if (e.target === card) selectPeak(i); };
+                card.innerHTML = `
+                    <div class="peak-card-header">
+                        <div class="peak-title">Peak ${i + 1}</div>
+                        <div>
+                            <button class="delete-peak-btn" onclick="deletePeak(${i}); event.stopPropagation();"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                    <div class="timestamps-grid">
+                        <div class="timestamp-item ${i===activePeakIndex?'active':''}">
+                            <div class="timestamp-header">
+                                <div class="timestamp-title">Build Up</div>
+                                <div class="timestamp-value">${fmt(p.build_up)}</div>
+                            </div>
+                            <div class="timestamp-controls">
+                                <button class="timestamp-btn" onclick="markTime('build_up', ${i}); event.stopPropagation();"><i class="fas fa-flag"></i> Mark</button>
+                                <button class="timestamp-btn" onclick="goToTime('build_up', ${i}); event.stopPropagation();"><i class="fas fa-play-circle"></i> Go To</button>
+                            </div>
+                        </div>
+                        <div class="timestamp-item ${i===activePeakIndex?'active':''}">
+                            <div class="timestamp-header">
+                                <div class="timestamp-title">Peak Start</div>
+                                <div class="timestamp-value">${fmt(p.peak_start)}</div>
+                            </div>
+                            <div class="timestamp-controls">
+                                <button class="timestamp-btn" onclick="markTime('peak_start', ${i}); event.stopPropagation();"><i class="fas fa-flag"></i> Mark</button>
+                                <button class="timestamp-btn" onclick="goToTime('peak_start', ${i}); event.stopPropagation();"><i class="fas fa-play-circle"></i> Go To</button>
+                            </div>
+                        </div>
+                        <div class="timestamp-item ${i===activePeakIndex?'active':''}">
+                            <div class="timestamp-header">
+                                <div class="timestamp-title">Peak End</div>
+                                <div class="timestamp-value">${fmt(p.peak_end)}</div>
+                            </div>
+                            <div class="timestamp-controls">
+                                <button class="timestamp-btn" onclick="markTime('peak_end', ${i}); event.stopPropagation();"><i class="fas fa-flag"></i> Mark</button>
+                                <button class="timestamp-btn" onclick="goToTime('peak_end', ${i}); event.stopPropagation();"><i class="fas fa-play-circle"></i> Go To</button>
+                            </div>
+                        </div>
+                        <div class="timestamp-item ${i===activePeakIndex?'active':''}">
+                            <div class="timestamp-header">
+                                <div class="timestamp-title">Drop Off</div>
+                                <div class="timestamp-value">${fmt(p.drop_off)}</div>
+                            </div>
+                            <div class="timestamp-controls">
+                                <button class="timestamp-btn" onclick="markTime('drop_off', ${i}); event.stopPropagation();"><i class="fas fa-flag"></i> Mark</button>
+                                <button class="timestamp-btn" onclick="goToTime('drop_off', ${i}); event.stopPropagation();"><i class="fas fa-play-circle"></i> Go To</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="peak-caption">
+                        <label style="font-weight:600">Peak Caption</label>
+                        <textarea placeholder="Caption for this peak..." oninput="updatePeakCaption(${i}, this.value);">${p.caption || ''}</textarea>
+                    </div>
+                `;
+                card.addEventListener('click', () => selectPeak(i));
+                container.appendChild(card);
+            });
+        }
     </script>
 </body>
 </html>
