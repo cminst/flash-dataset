@@ -108,6 +108,14 @@
             text-align: right;
         }
         
+        #quality-estimate {
+            font-size: 0.85rem;
+            color: var(--secondary-text);
+            margin-top: 8px;
+            text-align: right;
+            font-style: italic;
+        }
+        
         .main-content {
             padding: 30px;
         }
@@ -436,6 +444,7 @@
                 </div>
                 <div id="progress-text">0 / 0 tasks completed (0%)</div>
             </div>
+            <div id="quality-estimate"></div>
         </div>
         
         <div class="main-content">
@@ -683,8 +692,20 @@
                 const percentage = data.total > 0 ? (data.completed / data.total) * 100 : 0;
                 document.getElementById('progress-bar').style.width = `${percentage}%`;
                 document.getElementById('progress-text').textContent = `${data.completed} / ${data.total} tasks completed (${percentage.toFixed(1)}%)`;
+                
+                // Calculate quality estimate
+                const labeledCount = data.completed + data.bad_quality;
+                if (labeledCount > 0) {
+                    const badPercentage = (data.bad_quality / labeledCount) * 100;
+                    const estimatedBadTotal = (badPercentage / 100) * data.total;
+                    document.getElementById('quality-estimate').textContent = 
+                        `Quality estimate: ${badPercentage.toFixed(1)}% bad videos (${data.bad_quality}/${labeledCount} labeled) ≈ ${Math.round(estimatedBadTotal)} of ${data.total} total`;
+                } else {
+                    document.getElementById('quality-estimate').textContent = '';
+                }
             } catch (error) {
                 document.getElementById('progress-text').textContent = 'Could not load progress.';
+                document.getElementById('quality-estimate').textContent = '';
             }
         }
         

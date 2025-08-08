@@ -129,4 +129,5 @@ def get_progress():
     df = pd.read_csv(DB_FILE)
     total = len(df[df['status'] != 'bad_quality'])
     completed = len(df[df['status'] == 'completed'])
-    return {"completed": completed, "total": total}
+    bad_quality = len(df[df['status'] == 'bad_quality'])
+    return {"completed": completed, "total": total, "bad_quality": bad_quality}
