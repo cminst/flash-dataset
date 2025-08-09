@@ -11,3 +11,5 @@ run_batch.py
 ytc.txt
 downloaded_clips/*
 *.tar.gz
+runs/*
+models/*
