@@ -671,7 +671,7 @@
             videoPlayer.pause();
         }
 
-        function defaultPeak() { return { build_up: -1.0, peak_start: -1.0, peak_end: -1.0, drop_off: -1.0, caption: '' }; }
+        function defaultPeak(initialCaption = '') { return { build_up: -1.0, peak_start: -1.0, peak_end: -1.0, drop_off: -1.0, caption: initialCaption || '' }; }
         function resetPeaks() { peaks = []; activePeakIndex = -1; }
 
         function updateUIForNewTask() {
@@ -688,7 +688,19 @@
                     caption: p.caption || ''
                 }));
             } else {
-                peaks = [ defaultPeak() ];
+                // Fallback to legacy single-peak values if present, else seed caption from overall caption
+                const hasLegacy = ['build_up','peak_start','peak_end','drop_off'].some(k => typeof currentTask[k] === 'number' && currentTask[k] >= 0);
+                if (hasLegacy) {
+                    peaks = [{
+                        build_up: typeof currentTask.build_up === 'number' ? currentTask.build_up : -1,
+                        peak_start: typeof currentTask.peak_start === 'number' ? currentTask.peak_start : -1,
+                        peak_end: typeof currentTask.peak_end === 'number' ? currentTask.peak_end : -1,
+                        drop_off: typeof currentTask.drop_off === 'number' ? currentTask.drop_off : -1,
+                        caption: captionInput.value || ''
+                    }];
+                } else {
+                    peaks = [ defaultPeak(captionInput.value) ];
+                }
             }
             activePeakIndex = 0;
             renderPeaks();
@@ -738,7 +750,7 @@
 
         // Peak management and rendering
         function addPeak() {
-            peaks.push(defaultPeak());
+            peaks.push(defaultPeak(captionInput.value));
             activePeakIndex = peaks.length - 1;
             renderPeaks();
         }
@@ -816,10 +828,9 @@
                     </div>
                     <div class="peak-caption">
                         <label style="font-weight:600">Peak Caption</label>
-                        <textarea placeholder="Caption for this peak..." oninput="updatePeakCaption(${i}, this.value);">${p.caption || ''}</textarea>
+                        <textarea placeholder="Caption for this peak..." onmousedown="event.stopPropagation()" oninput="updatePeakCaption(${i}, this.value);">${p.caption || ''}</textarea>
                     </div>
                 `;
-                card.addEventListener('click', () => selectPeak(i));
                 container.appendChild(card);
             });
         }
