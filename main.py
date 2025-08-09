@@ -156,4 +156,17 @@ def get_progress():
     total = len(df[df['status'] != 'bad_quality'])
     completed = len(df[df['status'] == 'completed'])
     bad_quality = len(df[df['status'] == 'bad_quality'])
-    return {"completed": completed, "total": total, "bad_quality": bad_quality}
+    
+    # Calculate total peaks from completed tasks
+    total_peaks = 0
+    if 'peaks' in df.columns:
+        completed_tasks = df[df['status'] == 'completed']
+        for _, task in completed_tasks.iterrows():
+            if 'peaks' in task and pd.notnull(task['peaks']) and task['peaks'] != '':
+                try:
+                    peaks_data = json.loads(task['peaks'])
+                    total_peaks += len(peaks_data)
+                except Exception:
+                    pass  # Skip invalid JSON
+    
+    return {"completed": completed, "total": total, "bad_quality": bad_quality, "total_peaks": total_peaks}
