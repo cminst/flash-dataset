@@ -42,7 +42,7 @@
         
         .container {
             max-width: 1000px;
-            margin: 0 auto;
+            margin: 20px auto;
             background: var(--main-color);
             border-radius: 12px;
             box-shadow: var(--card-shadow);
@@ -91,6 +91,7 @@
             background-color: #e2e8f0;
             border-radius: 10px;
             overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
         }
         
         #progress-bar {
@@ -99,6 +100,7 @@
             border-radius: 10px;
             width: 0%;
             transition: width 0.5s ease-in-out;
+            box-shadow: 0 0 4px rgba(56, 161, 105, 0.4);
         }
         
         #progress-text {
@@ -117,7 +119,7 @@
         }
         
         .main-content {
-            padding: 30px;
+            padding: 20px 30px 30px;
         }
         
         .video-container {
@@ -126,6 +128,7 @@
             border-radius: 8px;
             overflow: hidden;
             box-shadow: var(--shadow);
+            padding-bottom: 10px;
         }
         
         video {
@@ -136,8 +139,25 @@
         
         .video-controls {
             display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            padding: 0 10px;
+        }
+        
+        .control-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            background-color: var(--accent-color);
+            transition: var(--transition);
+            box-shadow: var(--shadow);
         }
         
         .control-btn {
@@ -156,10 +176,11 @@
         
         .control-btn:hover {
             background-color: var(--accent-hover);
+            transform: translateY(-2px);
         }
         
         .control-btn i {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
         }
         
         .caption-section {
@@ -173,6 +194,8 @@
             margin-bottom: 15px;
             color: var(--primary-text);
             font-size: 1.3rem;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border-color);
         }
         
         textarea {
@@ -207,21 +230,27 @@
             margin-bottom: 10px;
         }
         .add-peak-btn {
-            padding: 8px 12px;
+            padding: 8px 16px;
             border: none;
             border-radius: 6px;
             background: var(--accent-color);
             color: #fff;
             cursor: pointer;
+            box-shadow: var(--shadow);
+            font-weight: 500;
+            transition: var(--transition);
         }
-        .add-peak-btn:hover { background: var(--accent-hover); }
+        .add-peak-btn:hover { 
+            background: var(--accent-hover); 
+            transform: translateY(-1px);
+        }
         .peaks-container { display: flex; flex-direction: column; gap: 16px; }
-        .peak-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; background: #f7fafc; }
+        .peak-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; background: #f7fafc; box-shadow: var(--shadow); }
         .peak-card.active { border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.2); }
         .peak-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
         .peak-title { font-weight: 600; }
-        .delete-peak-btn { background: var(--danger-color); color: #fff; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
-        .delete-peak-btn:hover { background: var(--danger-hover); }
+        .delete-peak-btn { background: var(--danger-color); color: #fff; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; box-shadow: var(--shadow); }
+        .delete-peak-btn:hover { background: var(--danger-hover); transform: translateY(-1px); }
         .peak-caption { margin-top: 8px; }
         
         .timestamps-grid {
@@ -240,11 +269,17 @@
             flex-direction: column;
             gap: 8px;
             transition: var(--transition);
+            box-shadow: var(--shadow);
         }
         
         .timestamp-item.active {
             border-color: var(--accent-color);
             box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.2);
+        }
+        
+        .timestamp-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.06);
         }
         
         .timestamp-header {
@@ -286,10 +321,12 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
+            box-shadow: var(--shadow);
         }
         
         .timestamp-btn:hover {
             background-color: var(--accent-hover);
+            transform: translateY(-1px);
         }
         
         .timestamp-btn i {
