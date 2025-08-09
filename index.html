@@ -551,7 +551,7 @@
                     throw new Error(error.detail || 'Server error');
                 }
                 currentTask = await response.json();
-                resetLabels();
+                resetPeaks();
                 updateUIForNewTask();
                 showMessage(`Labeling video row_id: ${currentTask.row_id}`, 'info');
             } catch (error) {
