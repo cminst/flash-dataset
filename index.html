@@ -110,20 +110,24 @@
             text-align: right;
         }
 
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+        
         #quality-estimate {
             font-size: 0.85rem;
             color: var(--secondary-text);
-            margin-top: 8px;
-            text-align: right;
             font-style: italic;
+            text-align: right;
         }
         
         #peak-count {
             font-size: 0.85rem;
             color: var(--secondary-text);
-            margin-top: 4px;
-            text-align: right;
             font-style: italic;
+            text-align: left;
         }
 
         .main-content {
@@ -514,8 +518,10 @@
                 </div>
                 <div id="progress-text">0 / 0 tasks completed (0%)</div>
             </div>
-            <div id="quality-estimate"></div>
-            <div id="peak-count"></div>
+            <div class="stats-container">
+                <div id="peak-count"></div>
+                <div id="quality-estimate"></div>
+            </div>
         </div>
 
         <div class="main-content">
