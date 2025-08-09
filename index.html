@@ -528,13 +528,17 @@
             <div class="video-container">
                 <video id="video-player" controls></video>
                 <div class="video-controls">
+                    <button class="control-btn" onclick="prevFrame()" title="Previous Frame">
+                        <i class="fas fa-backward-step"></i>
+                        <span>Prev Frame</span>
+                    </button>
                     <button class="control-btn" onclick="playPauseVideo()">
                         <i class="fas fa-play"></i>
                         <span>Play/Pause</span>
                     </button>
-                    <button class="control-btn" onclick="resetVideo()">
-                        <i class="fas fa-redo"></i>
-                        <span>Reset</span>
+                    <button class="control-btn" onclick="nextFrame()" title="Next Frame">
+                        <i class="fas fa-forward-step"></i>
+                        <span>Next Frame</span>
                     </button>
                 </div>
             </div>
@@ -588,6 +592,86 @@
         const videoPlayer = document.getElementById('video-player');
         const captionInput = document.getElementById('caption-input');
         const statusMessage = document.getElementById('status-message');
+
+        // Accurate frame stepping support
+        let frameDuration = null; // seconds per frame
+        const hasRVFC = (typeof HTMLVideoElement !== 'undefined') && ('requestVideoFrameCallback' in HTMLVideoElement.prototype);
+        const _frameSample = { lastMediaTime: null, deltas: [] };
+
+        function median(arr) {
+            const s = [...arr].sort((a, b) => a - b);
+            const m = Math.floor(s.length / 2);
+            return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+        }
+
+        function snapToCommonRates(dt) {
+            const rates = [24, 25, 29.97, 30, 50, 59.94, 60];
+            let best = dt, bestDiff = Infinity;
+            for (const f of rates) {
+                const d = 1 / f;
+                const diff = Math.abs(d - dt);
+                if (diff < bestDiff) { bestDiff = diff; best = d; }
+            }
+            return bestDiff < 0.002 ? best : dt; // snap within ~2ms
+        }
+
+        function startFpsSampling() {
+            if (!hasRVFC) return;
+            _frameSample.deltas = [];
+            _frameSample.lastMediaTime = null;
+            const sampleTarget = 12;
+            function onFrame(now, metadata) {
+                if (_frameSample.lastMediaTime != null) {
+                    const dt = metadata.mediaTime - _frameSample.lastMediaTime;
+                    if (dt > 0 && dt < 0.2) _frameSample.deltas.push(dt);
+                }
+                _frameSample.lastMediaTime = metadata.mediaTime;
+                if (!videoPlayer.paused && _frameSample.deltas.length < sampleTarget) {
+                    videoPlayer.requestVideoFrameCallback(onFrame);
+                }
+                if (_frameSample.deltas.length >= 4 && frameDuration == null) {
+                    const med = median(_frameSample.deltas);
+                    frameDuration = snapToCommonRates(med);
+                }
+            }
+            videoPlayer.requestVideoFrameCallback(onFrame);
+        }
+
+        videoPlayer.addEventListener('play', startFpsSampling);
+        videoPlayer.addEventListener('loadedmetadata', () => {
+            frameDuration = null;
+            _frameSample.deltas = [];
+            _frameSample.lastMediaTime = null;
+        });
+
+        function getFrameDuration() {
+            // Fallback to 30fps if not yet measured
+            return (typeof frameDuration === 'number' && isFinite(frameDuration) && frameDuration > 0) ? frameDuration : (1 / 30);
+        }
+
+        function stepFrames(direction) {
+            const fd = getFrameDuration();
+            const dur = videoPlayer.duration;
+            const cur = videoPlayer.currentTime || 0;
+            let idx = Math.round(cur / fd) + (direction > 0 ? 1 : -1);
+            let t = idx * fd;
+            if (isFinite(dur)) t = Math.max(0, Math.min(dur - 0.000001, t)); else t = Math.max(0, t);
+            videoPlayer.pause();
+            videoPlayer.currentTime = t;
+        }
+
+        function prevFrame() { stepFrames(-1); }
+        function nextFrame() { stepFrames(1); }
+
+        // Keyboard shortcuts: [ for previous frame, ] for next frame
+        document.addEventListener('keydown', (e) => {
+            const ae = document.activeElement;
+            const tag = ae && ae.tagName ? ae.tagName.toUpperCase() : '';
+            const isTyping = (tag === 'INPUT' || tag === 'TEXTAREA') || (ae && ae.isContentEditable);
+            if (isTyping) return;
+            if (e.key === '[') { e.preventDefault(); prevFrame(); }
+            if (e.key === ']') { e.preventDefault(); nextFrame(); }
+        });
 
         let currentTask = null;
         let peaks = [];
