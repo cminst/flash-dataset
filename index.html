@@ -24,13 +24,13 @@
             --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             --transition: all 0.3s ease;
         }
-        
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-        
+
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-color);
@@ -39,7 +39,7 @@
             padding: 20px;
             min-height: 100vh;
         }
-        
+
         .container {
             max-width: 1000px;
             margin: 20px auto;
@@ -48,7 +48,7 @@
             box-shadow: var(--card-shadow);
             overflow: hidden;
         }
-        
+
         header {
             background: linear-gradient(135deg, #2b6cb0, #4299e1);
             color: white;
@@ -57,34 +57,34 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .logo {
             display: flex;
             align-items: center;
             gap: 12px;
         }
-        
+
         .logo i {
             font-size: 28px;
         }
-        
+
         .logo h1 {
             font-size: 1.8rem;
             font-weight: 600;
         }
-        
+
         .progress-section {
             padding: 20px 30px;
             background: var(--main-color);
             border-bottom: 1px solid var(--border-color);
         }
-        
+
         .progress-container {
             display: flex;
             align-items: center;
             gap: 15px;
         }
-        
+
         #progress-bar-container {
             flex: 1;
             height: 12px;
@@ -93,7 +93,7 @@
             overflow: hidden;
             box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
         }
-        
+
         #progress-bar {
             height: 100%;
             background-color: var(--success-color);
@@ -102,14 +102,14 @@
             transition: width 0.5s ease-in-out;
             box-shadow: 0 0 4px rgba(56, 161, 105, 0.4);
         }
-        
+
         #progress-text {
             font-size: 0.95rem;
             color: var(--secondary-text);
             min-width: 180px;
             text-align: right;
         }
-        
+
         #quality-estimate {
             font-size: 0.85rem;
             color: var(--secondary-text);
@@ -117,26 +117,26 @@
             text-align: right;
             font-style: italic;
         }
-        
+
         .main-content {
             padding: 20px 30px 30px;
         }
-        
+
         .video-container {
             position: relative;
             margin-bottom: 25px;
             border-radius: 8px;
             overflow: hidden;
             box-shadow: var(--shadow);
-            padding-bottom: 10px;
+            padding-bottom: 0px;
         }
-        
+
         video {
             width: 100%;
             display: block;
             background: #000;
         }
-        
+
         .video-controls {
             display: flex;
             justify-content: center;
@@ -144,7 +144,7 @@
             margin: 20px 0;
             padding: 0 10px;
         }
-        
+
         .control-btn {
             display: flex;
             align-items: center;
@@ -159,7 +159,7 @@
             transition: var(--transition);
             box-shadow: var(--shadow);
         }
-        
+
         .control-btn {
             display: flex;
             align-items: center;
@@ -173,20 +173,20 @@
             background-color: var(--accent-color);
             transition: var(--transition);
         }
-        
+
         .control-btn:hover {
             background-color: var(--accent-hover);
             transform: translateY(-2px);
         }
-        
+
         .control-btn i {
             font-size: 1.2rem;
         }
-        
+
         .caption-section {
             margin-bottom: 30px;
         }
-        
+
         .section-header {
             display: flex;
             align-items: center;
@@ -197,7 +197,7 @@
             padding-bottom: 8px;
             border-bottom: 2px solid var(--border-color);
         }
-        
+
         textarea {
             width: 100%;
             padding: 15px;
@@ -211,13 +211,13 @@
             font-family: inherit;
             transition: var(--transition);
         }
-        
+
         textarea:focus {
             outline: none;
             border-color: var(--accent-color);
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
         }
-        
+
         .timestamps-section {
             margin-bottom: 30px;
         }
@@ -240,8 +240,8 @@
             font-weight: 500;
             transition: var(--transition);
         }
-        .add-peak-btn:hover { 
-            background: var(--accent-hover); 
+        .add-peak-btn:hover {
+            background: var(--accent-hover);
             transform: translateY(-1px);
         }
         .peaks-container { display: flex; flex-direction: column; gap: 16px; }
@@ -252,14 +252,14 @@
         .delete-peak-btn { background: var(--danger-color); color: #fff; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; box-shadow: var(--shadow); }
         .delete-peak-btn:hover { background: var(--danger-hover); transform: translateY(-1px); }
         .peak-caption { margin-top: 8px; }
-        
+
         .timestamps-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin-top: 20px;
         }
-        
+
         .timestamp-item {
             background: #f7fafc;
             border: 1px solid var(--border-color);
@@ -271,28 +271,28 @@
             transition: var(--transition);
             box-shadow: var(--shadow);
         }
-        
+
         .timestamp-item.active {
             border-color: var(--accent-color);
             box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.2);
         }
-        
+
         .timestamp-item:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.06);
         }
-        
+
         .timestamp-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .timestamp-title {
             font-weight: 600;
             color: var(--primary-text);
         }
-        
+
         .timestamp-value {
             font-family: monospace;
             font-size: 0.95rem;
@@ -301,12 +301,12 @@
             background: rgba(66, 153, 225, 0.1);
             border-radius: 4px;
         }
-        
+
         .timestamp-controls {
             display: flex;
             gap: 10px;
         }
-        
+
         .timestamp-btn {
             flex: 1;
             padding: 10px;
@@ -323,26 +323,26 @@
             gap: 6px;
             box-shadow: var(--shadow);
         }
-        
+
         .timestamp-btn:hover {
             background-color: var(--accent-hover);
             transform: translateY(-1px);
         }
-        
+
         .timestamp-btn i {
             font-size: 0.9rem;
         }
-        
+
         .actions-section {
             margin-top: 30px;
         }
-        
+
         .actions-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
         }
-        
+
         .action-btn {
             padding: 14px 20px;
             font-size: 1.05rem;
@@ -357,36 +357,36 @@
             transition: var(--transition);
             box-shadow: var(--shadow);
         }
-        
+
         .action-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.06);
         }
-        
+
         .submit-btn {
             background-color: var(--success-color);
         }
-        
+
         .submit-btn:hover {
             background-color: var(--success-hover);
         }
-        
+
         .next-btn {
             background-color: #718096;
         }
-        
+
         .next-btn:hover {
             background-color: #4a5568;
         }
-        
+
         .delete-btn {
             background-color: var(--danger-color);
         }
-        
+
         .delete-btn:hover {
             background-color: var(--danger-hover);
         }
-        
+
         #status-message {
             margin-top: 25px;
             padding: 15px;
@@ -397,32 +397,32 @@
             border: 1px solid rgba(66, 153, 225, 0.2);
             display: none;
         }
-        
+
         #status-message.show {
             display: block;
             animation: fadeIn 0.3s ease;
         }
-        
+
         #status-message.success {
             background: rgba(56, 161, 105, 0.1);
             border-color: rgba(56, 161, 105, 0.2);
         }
-        
+
         #status-message.error {
             background: rgba(229, 62, 62, 0.1);
             border-color: rgba(229, 62, 62, 0.2);
         }
-        
+
         #status-message.warning {
             background: rgba(237, 137, 54, 0.1);
             border-color: rgba(237, 137, 54, 0.2);
         }
-        
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
+
         footer {
             text-align: center;
             padding: 20px;
@@ -431,7 +431,7 @@
             border-top: 1px solid var(--border-color);
             background: #f7fafc;
         }
-        
+
         .keyboard-hint {
             display: flex;
             align-items: center;
@@ -440,7 +440,7 @@
             font-size: 0.85rem;
             color: var(--secondary-text);
         }
-        
+
         .key {
             display: inline-block;
             padding: 2px 8px;
@@ -448,36 +448,36 @@
             border-radius: 4px;
             font-family: monospace;
         }
-        
+
         @media (max-width: 768px) {
             .container {
                 border-radius: 8px;
             }
-            
+
             header {
                 padding: 15px 20px;
                 flex-direction: column;
                 gap: 10px;
                 text-align: center;
             }
-            
+
             .main-content {
                 padding: 20px;
             }
-            
+
             .section-header {
                 font-size: 1.2rem;
             }
-            
+
             .actions-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .timestamp-controls {
                 flex-direction: column;
                 gap: 8px;
             }
-            
+
             .timestamp-btn {
                 padding: 12px;
             }
@@ -498,7 +498,7 @@
                 </button>
             </div>
         </header>
-        
+
         <div class="progress-section">
             <div class="progress-container">
                 <div id="progress-bar-container">
@@ -508,7 +508,7 @@
             </div>
             <div id="quality-estimate"></div>
         </div>
-        
+
         <div class="main-content">
             <div class="video-container">
                 <video id="video-player" controls></video>
@@ -523,7 +523,7 @@
                     </button>
                 </div>
             </div>
-            
+
             <div class="caption-section">
                 <div class="section-header">
                     <i class="fas fa-edit"></i>
@@ -531,7 +531,7 @@
                 </div>
                 <textarea id="caption-input" placeholder="Enter or edit the caption for this video..."></textarea>
             </div>
-            
+
             <div class="timestamps-section">
                 <div class="section-header">
                     <i class="fas fa-clock"></i>
@@ -543,7 +543,7 @@
                 </div>
                 <div id="peaks-container" class="peaks-container"></div>
             </div>
-            
+
             <div class="actions-section">
                 <div class="actions-grid">
                     <button class="action-btn submit-btn" onclick="submitLabels()">
@@ -560,10 +560,10 @@
                     </button>
                 </div>
             </div>
-            
+
             <div id="status-message"></div>
         </div>
-        
+
         <footer>
             <div>FLASH Video Labeling Tool v1.3</div>
         </footer>
@@ -573,7 +573,7 @@
         const videoPlayer = document.getElementById('video-player');
         const captionInput = document.getElementById('caption-input');
         const statusMessage = document.getElementById('status-message');
-        
+
         let currentTask = null;
         let peaks = [];
         let activePeakIndex = -1;
@@ -660,7 +660,7 @@
                 const percentage = data.total > 0 ? (data.completed / data.total) * 100 : 0;
                 document.getElementById('progress-bar').style.width = `${percentage}%`;
                 document.getElementById('progress-text').textContent = `${data.completed} / ${data.total} tasks completed (${percentage.toFixed(1)}%)`;
-                
+
                 // Calculate quality estimate (percentage of labeled videos that are good)
                 const labeledCount = data.completed + data.bad_quality;
                 if (labeledCount > 0) {
@@ -676,7 +676,7 @@
                 document.getElementById('quality-estimate').textContent = '';
             }
         }
-        
+
         function markTime(labelType, index = null) {
             if (!currentTask) return showMessage("Please get a task first!", 'warning');
             if (index === null) index = activePeakIndex;
@@ -742,7 +742,7 @@
             activePeakIndex = 0;
             renderPeaks();
         }
-        
+
         function clearUI() {
             currentTask = null;
             captionInput.value = '';
@@ -756,7 +756,7 @@
             statusMessage.textContent = message;
             statusMessage.className = '';
             statusMessage.classList.add('show');
-            
+
             switch(type) {
                 case 'success':
                     statusMessage.classList.add('success');
@@ -770,7 +770,7 @@
                 default:
                     statusMessage.classList.add('info');
             }
-            
+
             // Auto-hide success messages after 3 seconds
             if (type === 'success') {
                 setTimeout(() => {
