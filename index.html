@@ -797,7 +797,7 @@
             if (index < 0 || index >= peaks.length) return showMessage("Select a peak first.", 'warning');
             if (peaks[index][labelType] < 0) return showMessage(`Please mark ${labelType.replace('_', ' ')} first for Peak ${index+1}.`, 'warning');
             videoPlayer.currentTime = peaks[index][labelType];
-            videoPlayer.play();
+            videoPlayer.pause();
         }
 
         function playPauseVideo() {
