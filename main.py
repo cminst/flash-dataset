@@ -153,7 +153,7 @@ def delete_task(row_id: int):
 def get_progress():
     """Calculates and returns the overall labeling progress."""
     df = pd.read_csv(DB_FILE)
-    total = len(df[df['status'] != 'bad_quality'])
+    total_tasks = len(df)
     completed = len(df[df['status'] == 'completed'])
     bad_quality = len(df[df['status'] == 'bad_quality'])
     
@@ -169,4 +169,4 @@ def get_progress():
                 except Exception:
                     pass  # Skip invalid JSON
     
-    return {"completed": completed, "total": total, "bad_quality": bad_quality, "total_peaks": total_peaks}
+    return {"completed": completed, "total": total_tasks, "bad_quality": bad_quality, "total_peaks": total_peaks}
