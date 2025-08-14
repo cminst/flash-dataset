@@ -138,7 +138,7 @@ class LabelingTaskCleaner:
 
     def calculate_true_time(self, peak: Peak, original_start: float, original_end: float) -> Peak:
         """Calculate true time in original video for peak start and end"""
-        # The clip is cropped from (original_start - 7) to (original_end + 7)
+        # Clips are cropped from (original_start - 7) to (original_end + 7)
         # Clip duration is (original_end + 7) - (original_start - 7) = original_end - original_start + 14
         # Peak timing is relative to the clip start (which is original_start - 7)
 
@@ -219,6 +219,13 @@ class LabelingTaskCleaner:
     def validate_peak_timing(self, peak: Peak) -> bool:
         """Validate peak timing and fix issues"""
         is_valid = True
+
+        # Ensure peak_end is not before peak_start
+        if peak.peak_end < peak.peak_start:
+            peak.peak_end = peak.peak_start
+            # Keep true_peak_end consistent if available
+            if peak.true_peak_start is not None:
+                peak.true_peak_end = peak.true_peak_start
 
         # Check if build_up is after peak_start
         if peak.build_up > peak.peak_start:
