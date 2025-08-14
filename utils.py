@@ -64,7 +64,9 @@ def plot_peak_dataset_stats(dataset):
                     if len(parts) >= 3:  # Ensure we have the required data
                         start_time = float(parts[-2])
                         end_time = float(parts[-1])
-                        thumos_durations.append(end_time - start_time)
+                        duration = end_time - start_time
+                        if duration <= 40:
+                            thumos_durations.append(duration)
 
     # Create subplots side by side
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(21, 5))
