@@ -137,6 +137,7 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
                         medianprops=dict(color='red', linewidth=2))
         ax[1,1].set_title('Action Duration Comparison (Boxplot)')
         ax[1,1].set_ylabel('Duration (seconds)')
+        ax[1,1].set_ylim(top=20)
         ax[1,1].grid(axis='y', alpha=0.3, linestyle='--')
 
     # Final layout
