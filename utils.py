@@ -7,8 +7,8 @@ from typing import Union
 
 import yt_dlp
 
-# Function to plot dataset statistics
-def plot_dataset_stats(dataset):
+# Function to plot caption length and action duration distributions
+def plot_caption_and_duration_distributions(dataset):
     # Calculate caption lengths and action durations
     caption_lengths = [len(row['revised_caption'].split()) for row in dataset]
     durations = [row['action_duration'] for row in dataset]
@@ -27,6 +27,42 @@ def plot_dataset_stats(dataset):
     # Plot 2: Action Durations
     ax2.hist(durations, bins=20, color='salmon', edgecolor='black')
     ax2.set_title('Action Duration Distribution')
+    ax2.set_xlabel('Duration (seconds)')
+    ax2.set_ylabel('Frequency')
+    ax2.set_xlim(left=0)
+    ax2.grid(axis='y', alpha=0.3, linestyle='--')
+
+    # Final layout
+    plt.tight_layout()
+    plt.show()
+
+# Function to plot caption length and action duration distributions from peaks data
+def plot_caption_and_duration_distributions_from_peaks(dataset):
+    # Extract caption lengths and action durations from the 'peaks' field
+    caption_lengths = []
+    durations = []
+    for row in dataset:
+        peaks = eval(row['peaks'])  # Convert string representation of list to actual list
+        for peak in peaks:
+            # Caption length in words
+            caption_lengths.append(len(peak['caption'].split()))
+            # Action duration computed as peak_end - peak_start
+            durations.append(peak['peak_end'] - peak['peak_start'])
+
+    # Create subplots side by side
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+
+    # Plot 1: Caption Word Lengths
+    ax1.hist(caption_lengths, bins=20, color='skyblue', edgecolor='black')
+    ax1.set_title('Caption Word Length Distribution (from Peaks)')
+    ax1.set_xlabel('Number of Words')
+    ax1.set_ylabel('Frequency')
+    ax1.set_xlim(left=0)
+    ax1.grid(axis='y', alpha=0.3, linestyle='--')
+
+    # Plot 2: Action Durations (Peak Duration)
+    ax2.hist(durations, bins=20, color='salmon', edgecolor='black')
+    ax2.set_title('Action Duration Distribution (from Peaks)')
     ax2.set_xlabel('Duration (seconds)')
     ax2.set_ylabel('Frequency')
     ax2.set_xlim(left=0)
