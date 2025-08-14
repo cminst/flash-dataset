@@ -113,7 +113,7 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
     if durations and thumos_durations:
         min_duration = min(min(durations), min(thumos_durations))
         max_duration = max(max(durations), max(thumos_durations))
-        bins = 30
+        bins = 40
 
         ax[1,0].hist(durations, bins=bins, range=(min_duration, max_duration),
                      alpha=0.7, color='red', label='Our Dataset', density=True)
