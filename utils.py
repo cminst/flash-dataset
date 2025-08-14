@@ -90,6 +90,8 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
 
                         thumos_durations.append(end_time - start_time)
 
+    thumos_durations = list(filter(lambda x: x < thumos_duration_cap, thumos_durations))
+
     # Create subplots in 2x2 grid
     _, ax = plt.subplots(2, 2, figsize=(15, 10))
 
@@ -112,7 +114,7 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
     # Plot 3: Duration Comparison Histogram (Bottom-Left)
     if durations and thumos_durations:
         min_duration = min(min(durations), min(thumos_durations))
-        max_duration = min(thumos_duration_cap, max(max(durations), max(thumos_durations)))
+        max_duration = max(max(durations), max(thumos_durations))
         bins = 30
 
         ax[1,0].hist(durations, bins=bins, range=(min_duration, max_duration),
