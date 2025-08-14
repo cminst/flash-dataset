@@ -74,7 +74,7 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
             durations.append(peak['peak_end'] - peak['peak_start'])
 
     # Load THUMOS'14 data
-    thumos_all_durations = []  # keep full list to allow stats like max without cap
+    thumos_durations = []
     thumos_dir = Path(__file__).parent / "THUMOS14"
     if thumos_dir.exists():
         for txt_file in thumos_dir.glob("*_val.txt"):
@@ -89,12 +89,8 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
                         start_time = float(parts[-2])
                         end_time = float(parts[-1])
 
-                        thumos_all_durations.append(end_time - start_time)
+                        thumos_durations.append(end_time - start_time)
 
-    # Filtered version used for plots to compare with a cap
-    thumos_durations = list(filter(lambda x: x < thumos_duration_cap, thumos_all_durations))
-
-    # Create subplots in 2x2 grid
     _, ax = plt.subplots(2, 2, figsize=(15, 10))
 
     # Plot 1: Caption Word Lengths (Top-Left)
@@ -132,7 +128,6 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
 
     # Plot 4: Duration Comparison Boxplot (Bottom-Right)
     if durations and thumos_durations:
-        # Keep labels simple; show detailed stats separately (console/table)
         labels = ['FLASH', "THUMOS'14 (< cap)"]
         ax[1,1].boxplot([durations, thumos_durations],
                         labels=labels,
@@ -144,13 +139,12 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
         ax[1,1].set_ylim(top=20)
         ax[1,1].grid(axis='y', alpha=0.3, linestyle='--')
 
-    # Final layout
     plt.tight_layout()
     plt.show()
 
-    # After plotting, print a concise stats table to console
+    # Stats table
     if durations:
-        def summarize(arr, name, max_full_arr=None):
+        def summarize(arr, name):
             arr_np = np.asarray(arr, dtype=float)
             stats = {
                 'dataset': name,
@@ -161,20 +155,15 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
                 'q75': float(np.percentile(arr_np, 75)) if arr_np.size else float('nan'),
                 'min': float(np.min(arr_np)) if arr_np.size else float('nan'),
                 'max': float(np.max(arr_np)) if arr_np.size else float('nan'),
-                'max_full': None,
             }
-            if max_full_arr is None:
-                stats['max_full'] = stats['max']
-            else:
-                stats['max_full'] = float(np.max(np.asarray(max_full_arr, dtype=float))) if len(max_full_arr) else float('nan')
             return stats
 
         rows = []
         rows.append(summarize(durations, 'FLASH'))
         if thumos_durations:
-            rows.append(summarize(thumos_durations, "THUMOS'14 (< cap)", thumos_all_durations))
+            rows.append(summarize(thumos_durations, "THUMOS'14"))
 
-        headers = ['dataset', 'count', 'mean', 'median', 'q25', 'q75', 'min', 'max', 'max_full']
+        headers = ['dataset', 'count', 'mean', 'median', 'q25', 'q75', 'min', 'max']
 
         try:
             from tabulate import tabulate
@@ -185,7 +174,6 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
                 tablefmt='fancy_grid',
                 floatfmt='.2f',
             ))
-            print("Note: 'max_full' for THUMOS'14 ignores the duration cap.")
         except Exception:
             col_widths = {h: max(len(h), max(len(f"{r[h]:.2f}") if isinstance(r[h], float) else len(str(r[h])) for r in rows)) for h in headers}
             def fmt_cell(v):
@@ -196,7 +184,6 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
             print(sep_line)
             for r in rows:
                 print(' | '.join(fmt_cell(r[h]).ljust(col_widths[h]) for h in headers))
-            print("Note: 'max_full' for THUMOS'14 ignores the duration cap.")
 
 # Function to download a YouTube clip
 def download_youtube_clip(
