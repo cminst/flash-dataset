@@ -122,7 +122,7 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
         ax[1,0].set_title('Action Duration Distribution Comparison')
         ax[1,0].set_xlabel('Duration (seconds)')
         ax[1,0].set_ylabel('Percentage of Videos')
-        ax[1,0].set_xlim(left=0)
+        ax[1,0].set_xlim(left=0, right=thumos_duration_cap)
         ax[1,0].grid(axis='y', alpha=0.3, linestyle='--')
         ax[1,0].legend()
 
@@ -136,7 +136,7 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
                         medianprops=dict(color='red', linewidth=2))
         ax[1,1].set_title('Action Duration Comparison (Boxplot)')
         ax[1,1].set_ylabel('Duration (seconds)')
-        ax[1,1].set_ylim(top=20)
+        ax[1,1].set_ylim(bottom=-0.5, top=20)
         ax[1,1].grid(axis='y', alpha=0.3, linestyle='--')
 
     plt.tight_layout()
