@@ -37,16 +37,39 @@ def plot_caption_and_duration_distributions(dataset):
     plt.show()
 
 # Function to plot caption length and action duration distributions from peaks data
-def plot_peak_dataset_stats(dataset):
-    # Extract caption lengths and action durations from the 'peaks' field
+def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
+    """
+    Plot various statistics and distributions from a peak dataset.
+
+    Parameters
+    ----------
+    dataset : list
+        A list of dictionaries, each containing a 'peaks' field that holds action segment data.
+    thumos_duration_cap : int, optional
+        Maximum duration to consider when comparing with THUMOS'14 dataset, default is 40.
+
+    Returns
+    -------
+    None
+        This function displays plots but does not return any values.
+
+    Notes
+    -----
+    * Creates a 2x2 grid of plots showing caption length distribution, action duration distribution,
+      a comparison histogram with THUMOS'14 data, and a boxplot comparison.
+    * Expects each row in the dataset to have a 'peaks' field containing a list of dictionaries,
+      with each dictionary having 'caption', 'peak_start', and 'peak_end' fields.
+    * Will attempt to load THUMOS'14 data from a directory relative to the script location.
+    """
+
+    # Extract caption lengths and action durations from the peaks
     caption_lengths = []
     durations = []
     for row in dataset:
-        peaks = eval(row['peaks'])  # Convert string representation of list to actual list
+        peaks = eval(row['peaks'])
         for peak in peaks:
-            # Caption length in words
             caption_lengths.append(len(peak['caption'].split()))
-            # Action duration computed as peak_end - peak_start
+
             durations.append(peak['peak_end'] - peak['peak_start'])
 
     # Load THUMOS'14 data
@@ -61,49 +84,58 @@ def plot_peak_dataset_stats(dataset):
             with open(txt_file, 'r') as f:
                 for line in f:
                     parts = line.strip().split()
-                    if len(parts) >= 3:  # Ensure we have the required data
+                    if len(parts) >= 3:
                         start_time = float(parts[-2])
                         end_time = float(parts[-1])
-                        duration = end_time - start_time
-                        if duration <= 40:
-                            thumos_durations.append(duration)
 
-    # Create subplots side by side
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(21, 5))
+                        thumos_durations.append(end_time - start_time)
 
-    # Plot 1: Caption Word Lengths
-    ax1.hist(caption_lengths, bins=20, color='skyblue', edgecolor='black')
-    ax1.set_title('Caption Word Length Distribution (from Peaks)')
-    ax1.set_xlabel('Number of Words')
-    ax1.set_ylabel('Frequency')
-    ax1.set_xlim(left=0)
-    ax1.grid(axis='y', alpha=0.3, linestyle='--')
+    # Create subplots in 2x2 grid
+    _, ax = plt.subplots(2, 2, figsize=(15, 10))
 
-    # Plot 2: Action Durations (Peak Duration)
-    ax2.hist(durations, bins=20, color='salmon', edgecolor='black')
-    ax2.set_title('Action Duration Distribution (from Peaks)')
-    ax2.set_xlabel('Duration (seconds)')
-    ax2.set_ylabel('Frequency')
-    ax2.set_xlim(left=0)
-    ax2.grid(axis='y', alpha=0.3, linestyle='--')
+    # Plot 1: Caption Word Lengths (Top-Left)
+    ax[0,0].hist(caption_lengths, bins=20, color='skyblue', edgecolor='black')
+    ax[0,0].set_title('Caption Word Length Distribution (from Peaks)')
+    ax[0,0].set_xlabel('Number of Words')
+    ax[0,0].set_ylabel('Frequency')
+    ax[0,0].set_xlim(left=0)
+    ax[0,0].grid(axis='y', alpha=0.3, linestyle='--')
 
-    # Plot 3: Action Duration Distribution (Percentage Comparison)
+    # Plot 2: Action Durations Histogram (Top-Right)
+    ax[0,1].hist(durations, bins=20, color='salmon', edgecolor='black')
+    ax[0,1].set_title('Action Duration Distribution (from Peaks)')
+    ax[0,1].set_xlabel('Duration (seconds)')
+    ax[0,1].set_ylabel('Frequency')
+    ax[0,1].set_xlim(left=0)
+    ax[0,1].grid(axis='y', alpha=0.3, linestyle='--')
+
+    # Plot 3: Duration Comparison Histogram (Bottom-Left)
     if durations and thumos_durations:
         min_duration = min(min(durations), min(thumos_durations))
-        max_duration = max(max(durations), max(thumos_durations))
+        max_duration = min(thumos_duration_cap, max(max(durations), max(thumos_durations)))
         bins = 30
 
-        # Plot histograms as percentages
-        ax3.hist(durations, bins=bins, range=(min_duration, max_duration),
-                 alpha=0.7, color='red', label='Our Dataset', density=True)
-        ax3.hist(thumos_durations, bins=bins, range=(min_duration, max_duration),
-                 alpha=0.7, color='purple', label='THUMOS\'14', density=True)
-        ax3.set_title('Action Duration Distribution Comparison')
-        ax3.set_xlabel('Duration (seconds)')
-        ax3.set_ylabel('Percentage of Videos')
-        ax3.set_xlim(left=0)
-        ax3.grid(axis='y', alpha=0.3, linestyle='--')
-        ax3.legend()
+        ax[1,0].hist(durations, bins=bins, range=(min_duration, max_duration),
+                     alpha=0.7, color='red', label='Our Dataset', density=True)
+        ax[1,0].hist(thumos_durations, bins=bins, range=(min_duration, max_duration),
+                     alpha=0.7, color='purple', label='THUMOS\'14', density=True)
+        ax[1,0].set_title('Action Duration Distribution Comparison')
+        ax[1,0].set_xlabel('Duration (seconds)')
+        ax[1,0].set_ylabel('Percentage of Videos')
+        ax[1,0].set_xlim(left=0)
+        ax[1,0].grid(axis='y', alpha=0.3, linestyle='--')
+        ax[1,0].legend()
+
+    # Plot 4: Duration Comparison Boxplot (Bottom-Right)
+    if durations and thumos_durations:
+        ax[1,1].boxplot([durations, thumos_durations],
+                        labels=['Our Dataset', 'THUMOS\'14'],
+                        patch_artist=True,
+                        boxprops=dict(facecolor='lightblue', color='black'),
+                        medianprops=dict(color='red', linewidth=2))
+        ax[1,1].set_title('Action Duration Comparison (Boxplot)')
+        ax[1,1].set_ylabel('Duration (seconds)')
+        ax[1,1].grid(axis='y', alpha=0.3, linestyle='--')
 
     # Final layout
     plt.tight_layout()
