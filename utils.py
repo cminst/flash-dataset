@@ -130,8 +130,8 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
 
     # Plot 4: Duration Comparison Boxplot (Bottom-Right)
     if durations and thumos_durations:
-        labels = [f'FLASH ({sum(durations) / len(durations):.1f})',
-                  f'THUMOS\'14 ({sum(thumos_durations) / len(thumos_durations):.1f})']
+        labels = [f'FLASH (Avg Duration = {sum(durations) / len(durations):.1f})',
+                  f'THUMOS\'14 (Avg Duration = {sum(thumos_durations) / len(thumos_durations):.1f})']
         ax[1,1].boxplot([durations, thumos_durations],
                         labels=labels,
                         patch_artist=True,
