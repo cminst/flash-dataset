@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import os
 import subprocess
 import tempfile
@@ -73,7 +74,7 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
             durations.append(peak['peak_end'] - peak['peak_start'])
 
     # Load THUMOS'14 data
-    thumos_durations = []
+    thumos_all_durations = []  # keep full list to allow stats like max without cap
     thumos_dir = Path(__file__).parent / "THUMOS14"
     if thumos_dir.exists():
         for txt_file in thumos_dir.glob("*_val.txt"):
@@ -88,9 +89,10 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
                         start_time = float(parts[-2])
                         end_time = float(parts[-1])
 
-                        thumos_durations.append(end_time - start_time)
+                        thumos_all_durations.append(end_time - start_time)
 
-    thumos_durations = list(filter(lambda x: x < thumos_duration_cap, thumos_durations))
+    # Filtered version used for plots to compare with a cap
+    thumos_durations = list(filter(lambda x: x < thumos_duration_cap, thumos_all_durations))
 
     # Create subplots in 2x2 grid
     _, ax = plt.subplots(2, 2, figsize=(15, 10))
@@ -130,8 +132,8 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
 
     # Plot 4: Duration Comparison Boxplot (Bottom-Right)
     if durations and thumos_durations:
-        labels = [f'FLASH (Avg Duration = {sum(durations) / len(durations):.1f})',
-                  f'THUMOS\'14 (Avg Duration = {sum(thumos_durations) / len(thumos_durations):.1f})']
+        # Keep labels simple; show detailed stats separately (console/table)
+        labels = ['FLASH', "THUMOS'14 (< cap)"]
         ax[1,1].boxplot([durations, thumos_durations],
                         labels=labels,
                         patch_artist=True,
@@ -145,6 +147,56 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
     # Final layout
     plt.tight_layout()
     plt.show()
+
+    # After plotting, print a concise stats table to console
+    if durations:
+        def summarize(arr, name, max_full_arr=None):
+            arr_np = np.asarray(arr, dtype=float)
+            stats = {
+                'dataset': name,
+                'count': int(arr_np.size),
+                'mean': float(np.mean(arr_np)) if arr_np.size else float('nan'),
+                'median': float(np.median(arr_np)) if arr_np.size else float('nan'),
+                'q25': float(np.percentile(arr_np, 25)) if arr_np.size else float('nan'),
+                'q75': float(np.percentile(arr_np, 75)) if arr_np.size else float('nan'),
+                'min': float(np.min(arr_np)) if arr_np.size else float('nan'),
+                'max': float(np.max(arr_np)) if arr_np.size else float('nan'),
+                'max_full': None,
+            }
+            if max_full_arr is None:
+                stats['max_full'] = stats['max']
+            else:
+                stats['max_full'] = float(np.max(np.asarray(max_full_arr, dtype=float))) if len(max_full_arr) else float('nan')
+            return stats
+
+        rows = []
+        rows.append(summarize(durations, 'FLASH'))
+        if thumos_durations:
+            rows.append(summarize(thumos_durations, "THUMOS'14 (< cap)", thumos_all_durations))
+
+        headers = ['dataset', 'count', 'mean', 'median', 'q25', 'q75', 'min', 'max', 'max_full']
+
+        try:
+            from tabulate import tabulate
+            print()
+            print(tabulate(
+                [[r[h] for h in headers] for r in rows],
+                headers=headers,
+                tablefmt='fancy_grid',
+                floatfmt='.2f',
+            ))
+            print("Note: 'max_full' for THUMOS'14 ignores the duration cap.")
+        except Exception:
+            col_widths = {h: max(len(h), max(len(f"{r[h]:.2f}") if isinstance(r[h], float) else len(str(r[h])) for r in rows)) for h in headers}
+            def fmt_cell(v):
+                return f"{v:.2f}" if isinstance(v, float) else str(v)
+            header_line = ' | '.join(h.ljust(col_widths[h]) for h in headers)
+            sep_line = '-+-'.join('-' * col_widths[h] for h in headers)
+            print(header_line)
+            print(sep_line)
+            for r in rows:
+                print(' | '.join(fmt_cell(r[h]).ljust(col_widths[h]) for h in headers))
+            print("Note: 'max_full' for THUMOS'14 ignores the duration cap.")
 
 # Function to download a YouTube clip
 def download_youtube_clip(
