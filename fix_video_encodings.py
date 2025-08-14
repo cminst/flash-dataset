@@ -1,241 +1,311 @@
+#!/usr/bin/env python3
+"""
+find_and_fix_av1.py
+
+Scan a directory for videos, report which are broken (e.g., AV1 "Missing Sequence Header"),
+and try to fix them by remuxing. If remux fails, optionally transcode to H.264.
+
+Usage:
+  python find_and_fix_av1.py /path/to/videos [--transcode-on-fail]
+
+Creates: /path/to/videos/fixed_clips
+"""
+
+import argparse
+import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Tuple
+from typing import Optional, Tuple
 
+# Optional OpenCV check for a quick decode probe
 try:
-    from rich import box
-    from rich.console import Console, Group
-    from rich.live import Live
-    from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
-    from rich.table import Table
-    from rich.panel import Panel
-    from rich.prompt import Prompt
-    from rich.style import Style
-    from rich.text import Text
-except ImportError:
-    print("Error: This script requires the 'rich' library.")
-    print("Install it using: pip install rich")
-    sys.exit(1)
+    import cv2  # type: ignore
+    HAS_CV2 = True
+except Exception:
+    HAS_CV2 = False
+
+from rich.console import Console
+from rich.table import Table
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.padding import Padding
+from rich.panel import Panel
+
+VIDEO_EXTS = {".mp4", ".mov", ".m4v", ".mkv", ".webm", ".avi", ".ts", ".m4s"}
 
 console = Console()
-ERRORS = []
-PROCESSED = 0
 
-def get_folder(prompt: str, default: str) -> Path:
-    """Get folder path from user with validation"""
-    while True:
-        path = Prompt.ask(
-            f"[blue]{prompt}[/blue]", 
-            default=default,
-            console=console
-        )
-        path_obj = Path(path).expanduser().resolve()
-        
-        if path_obj.exists() and path_obj.is_dir():
-            return path_obj
-        
-        if path == default and not path_obj.exists():
-            try:
-                path_obj.mkdir(parents=True, exist_ok=True)
-                return path_obj
-            except Exception as e:
-                console.print(f"[red]Error creating default folder: {e}[/red]")
-                continue
-        
-        console.print(f"[yellow]Directory does not exist: {path}[/yellow]")
-        create = Prompt.ask("Create this directory?", choices=["y", "n"], default="y", console=console)
-        if create == "y":
-            try:
-                path_obj.mkdir(parents=True, exist_ok=True)
-                return path_obj
-            except Exception as e:
-                console.print(f"[red]Failed to create directory: {e}[/red]")
-        else:
-            continue
+def run(cmd: list, check: bool = False) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=check)
 
-def get_video_files(input_folder: Path) -> List[Path]:
-    """Get all .mp4 files (case-insensitive) in input folder"""
-    video_files = []
-    extensions = [".mp4", ".MP4"]
-    
-    for entry in input_folder.iterdir():
-        if entry.is_file() and entry.suffix in extensions:
-            video_files.append(entry)
-    
-    if not video_files:
-        console.print(f"[yellow]No MP4 files found in {input_folder}[/yellow]")
-        sys.exit(0)
-    
-    return video_files
+def have_tool(name: str) -> bool:
+    return shutil.which(name) is not None
 
-def create_progress_display(total: int) -> Tuple[Progress, Text]:
-    """Create progress tracking components"""
-    progress = Progress(
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(bar_width=None),
-        "[progress.percentage]{task.percentage:>3.0f}%",
-        "•",
-        TimeRemainingColumn(),
-        console=console,
-        transient=False,
-    )
-    
-    stats = Text.assemble(
-        ("Processed: ", "bold"),
-        ("0", "cyan"),
-        (" / ", "bold"),
-        (str(total), "cyan"),
-        (" • Failed: ", "bold"),
-        ("0", "red"),
-        ("\n"),
-        ("Current: ", "bold"),
-        ("-", "italic"),
-    )
-    
-    return progress, stats
-
-def process_video(input_path: Path, output_path: Path) -> bool:
-    """Process single video with ffmpeg"""
-    global PROCESSED, ERRORS
-    
+def ffprobe_stream(path: Path) -> Optional[dict]:
+    """
+    Return primary video stream and format info via ffprobe, or None on failure.
+    """
+    cmd = [
+        "ffprobe",
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries",
+        "stream=index,codec_name,codec_type,avg_frame_rate,r_frame_rate,extradata_size,profile,pix_fmt,"
+        "color_space,color_transfer,color_primaries",
+        "-show_entries", "format=format_name,format_long_name,nb_streams,probe_score",
+        "-of", "json",
+        str(path),
+    ]
     try:
-        cmd = [
-            "ffmpeg", "-i", str(input_path),
-            "-c:v", "libopenh264", "-profile:v", "high", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-y",
-            str(output_path)
-        ]
-        
-        result = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            encoding="utf-8",
-            errors="replace"
-        )
-        
-        if result.returncode != 0:
-            error_msg = result.stderr.strip() or "Unknown ffmpeg error"
-            ERRORS.append((input_path.name, error_msg))
-            return False
-        return True
-    except Exception as e:
-        ERRORS.append((input_path.name, str(e)))
-        return False
-    finally:
-        PROCESSED += 1
+        proc = run(cmd)
+        if proc.returncode != 0:
+            return None
+        data = json.loads(proc.stdout or "{}")
+        streams = data.get("streams") or []
+        fmt = data.get("format") or {}
+        if not streams:
+            return None
+        return {"stream": streams[0], "format": fmt}
+    except Exception:
+        return None
 
-def update_display(progress, stats_task, video_name: str = "-"):
-    """Update progress display components"""
-    stats_text = Text.assemble(
-        ("Processed: ", "bold"),
-        (str(PROCESSED), "cyan"),
-        (" / ", "bold"),
-        (str(progress.tasks[0].total), "cyan"),
-        (" • Failed: ", "bold"),
-        (str(len(ERRORS)), "red"),
-        ("\n"),
-        ("Current: ", "bold"),
-        (video_name, "italic magenta"),
-    )
-    stats_task.update(stats_text)
+def quick_decode_ok(path: Path) -> Tuple[bool, float]:
+    """
+    Try to open and grab one frame with OpenCV. Also read FPS.
+    Returns (ok, fps). OpenCV is optional.
+    """
+    if not HAS_CV2:
+        return (True, 0.0)  # skip test if cv2 is missing
+    cap = cv2.VideoCapture(str(path))
+    if not cap.isOpened():
+        return (False, 0.0)
+    ok, _ = cap.read()
+    fps = cap.get(cv2.CAP_PROP_FPS) or 0.0
+    cap.release()
+    return (bool(ok), float(fps))
+
+def looks_like_segment(path: Path) -> bool:
+    # Heuristic for DASH/HLS fragments that will not have headers
+    name = path.name.lower()
+    return path.suffix.lower() == ".m4s" or "chunk" in name or "seg" in name or "init" in name
+
+def is_suspect_missing_header(meta: Optional[dict]) -> bool:
+    """
+    Judge likely missing AV1 sequence header from ffprobe fields.
+    """
+    if not meta:
+        return True
+    s = meta["stream"]
+    codec = s.get("codec_name", "")
+    extradata_size = s.get("extradata_size", None)
+    # Classic symptom: AV1 with zero or absent extradata
+    if codec == "av1":
+        if extradata_size in (0, None):
+            return True
+    return False
+
+def decide_output_path(in_path: Path, out_dir: Path) -> Path:
+    # Keep same name and extension when possible. Convert .ts or .m4s to .mp4 for better tooling.
+    ext = in_path.suffix.lower()
+    if ext in {".ts", ".m4s"}:
+        out_name = in_path.stem + ".mp4"
+    else:
+        out_name = in_path.name
+    out_path = out_dir / out_name
+    # Avoid accidental overwrite
+    i = 1
+    while out_path.exists():
+        out_path = out_dir / f"{in_path.stem}_fixed_{i}{out_path.suffix}"
+        i += 1
+    return out_path
+
+def try_remux(in_path: Path, out_path: Path) -> bool:
+    # For MP4 and MOV, add faststart. For others, just copy.
+    ext = in_path.suffix.lower()
+    if ext in {".mp4", ".mov", ".m4v"} or out_path.suffix.lower() == ".mp4":
+        cmd = [
+            "ffmpeg", "-y",
+            "-fflags", "+genpts",
+            "-i", str(in_path),
+            "-map", "0",
+            "-c", "copy",
+            "-movflags", "+faststart",
+            str(out_path),
+        ]
+    else:
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", str(in_path),
+            "-map", "0",
+            "-c", "copy",
+            str(out_path),
+        ]
+    proc = run(cmd)
+    return proc.returncode == 0 and out_path.exists() and out_path.stat().st_size > 0
+
+def try_transcode_h264(in_path: Path, out_path: Path) -> bool:
+    # Safe fallback: video to H.264, audio copied. Works even if AV1 support is spotty in your stack.
+    # Note: this decodes the source, so it still fails if the file is truly corrupt or starts midstream.
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", str(in_path),
+        "-map", "0",
+        "-c:v", "libx264",
+        "-preset", "medium",
+        "-crf", "22",
+        "-c:a", "copy",
+        str(out_path.with_suffix(".mp4")),
+    ]
+    proc = run(cmd)
+    out_h264 = out_path.with_suffix(".mp4")
+    return proc.returncode == 0 and out_h264.exists() and out_h264.stat().st_size > 0
+
+def process_file(path: Path, out_dir: Path, transcode_on_fail: bool) -> dict:
+    info = {
+        "file": str(path),
+        "status": "ok",
+        "detail": "",
+        "fixed_path": "",
+    }
+
+    if looks_like_segment(path):
+        info["status"] = "skip"
+        info["detail"] = "Likely a DASH/HLS segment. Needs manifest or init segment."
+        return info
+
+    meta = ffprobe_stream(path)
+    suspect = is_suspect_missing_header(meta)
+    decode_ok, fps = quick_decode_ok(path)
+
+    bad = False
+    reason = []
+    if suspect:
+        bad = True
+        reason.append("AV1 missing header suspected")
+    if not decode_ok or fps <= 0:
+        bad = True
+        reason.append("decode or FPS probe failed")
+
+    if not bad:
+        info["status"] = "good"
+        info["detail"] = f"codec={meta['stream'].get('codec_name','?')}, fps={fps:.3f}" if meta else f"fps={fps:.3f}"
+        return info
+
+    # Try to fix
+    out_path = decide_output_path(path, out_dir)
+    remux_ok = try_remux(path, out_path)
+    if remux_ok:
+        # Verify
+        meta2 = ffprobe_stream(out_path)
+        suspect2 = is_suspect_missing_header(meta2)
+        decode_ok2, fps2 = quick_decode_ok(out_path)
+        if not suspect2 and decode_ok2 and fps2 > 0:
+            info["status"] = "fixed"
+            info["fixed_path"] = str(out_path)
+            info["detail"] = f"remuxed: fps={fps2:.3f}, codec={meta2['stream'].get('codec_name','?') if meta2 else '?'}"
+            return info
+
+    if transcode_on_fail:
+        out_path2 = out_path  # base name
+        trans_ok = try_transcode_h264(path, out_path2)
+        if trans_ok:
+            final = out_path2.with_suffix(".mp4")
+            decode_ok3, fps3 = quick_decode_ok(final)
+            info["status"] = "fixed"
+            info["fixed_path"] = str(final)
+            info["detail"] = f"transcoded to H.264, fps={fps3:.3f}" if decode_ok3 else "transcoded to H.264"
+            return info
+
+    info["status"] = "failed"
+    joined_reason = "; ".join(reason) if reason else "unknown"
+    info["detail"] = f"attempted remux{' and transcode' if transcode_on_fail else ''}; still not decodable ({joined_reason})"
+    return info
 
 def main():
-    # Verify ffmpeg installation
-    try:
-        subprocess.run(["ffmpeg", "-version"], 
-                      stdout=subprocess.DEVNULL, 
-                      stderr=subprocess.DEVNULL,
-                      check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        console.print("[red]Error: ffmpeg not found or not working[/red]")
-        console.print("Please install ffmpeg with libopenh264 support")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("folder", type=str, help="Folder containing video files")
+    parser.add_argument("--transcode-on-fail", action="store_true", help="If remux does not fix, try H.264 transcode")
+    args = parser.parse_args()
+
+    root = Path(args.folder).expanduser().resolve()
+    if not root.exists() or not root.is_dir():
+        console.print(f"[red]Folder not found or not a directory:[/red] {root}")
         sys.exit(1)
-    
-    # Get user input
-    input_folder = get_folder("Input video folder", "video")
-    output_folder = get_folder("Output folder", "fixed")
-    
-    # Get video files
-    videos = get_video_files(input_folder)
-    total = len(videos)
-    
-    # Prepare progress display
-    progress, stats = create_progress_display(total)
-    task_id = progress.add_task("Processing videos", total=total)
-    
-    # Process videos with live display
-    with Live(
-        Group(
-            Panel(stats, title="Video Processing", border_style="blue", box=box.ROUNDED),
-            progress
-        ),
+
+    if not have_tool("ffprobe") or not have_tool("ffmpeg"):
+        console.print("[red]ffmpeg/ffprobe not found on PATH. Please install ffmpeg first.[/red]")
+        sys.exit(1)
+
+    out_dir = root / "fixed_clips"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    files = [p for p in root.iterdir() if p.is_file() and p.suffix.lower() in VIDEO_EXTS]
+    files.sort()
+
+    header = Panel.fit(
+        f"[bold]Scanning {len(files)} files in[/bold] [cyan]{root}[/cyan]\n"
+        f"Output: [green]{out_dir}[/green]\n"
+        f"OpenCV check: {'on' if HAS_CV2 else 'off'} | Transcode on fail: {args.transcode_on_fail}",
+        border_style="blue",
+    )
+    console.print(header)
+
+    results = []
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        transient=True,
         console=console,
-        refresh_per_second=10
-    ) as live:
-        for video in videos:
-            output_path = output_folder / video.name
-            
-            # Update current file
-            update_display(progress, live, video.name)
-            
-            # Process video
-            success = process_video(video, output_path)
-            
-            # Update progress bar
-            if success:
-                progress.update(task_id, advance=1, refresh=True)
-            else:
-                progress.update(task_id, advance=1, refresh=True)
-        
-        # Final update
-        update_display(progress, live)
-        progress.update(task_id, completed=total, refresh=True)
-    
-    # Show summary
-    console.print("\n[bold]Processing Complete:[/bold]")
-    console.print(f" • Total Videos: [cyan]{total}[/cyan]")
-    console.print(f" • Successfully Processed: [green]{total - len(ERRORS)}[/green]")
-    
-    if ERRORS:
-        console.print(f" • Failed: [red]{len(ERRORS)}[/red]\n")
-        
-        error_table = Table(
-            title="Failed Videos", 
-            box=box.ROUNDED,
-            show_header=True,
-            header_style="bold magenta"
+    ) as prog:
+        task = prog.add_task("Processing videos...", total=len(files))
+        for p in files:
+            res = process_file(p, out_dir, args.transcode_on_fail)
+            results.append(res)
+            prog.advance(task)
+
+    # Summaries
+    counts = {"good": 0, "fixed": 0, "failed": 0, "skip": 0, "ok": 0}
+    for r in results:
+        counts[r["status"]] = counts.get(r["status"], 0) + 1
+
+    table = Table(title="Results", title_style="bold")
+    table.add_column("File", overflow="fold")
+    table.add_column("Status")
+    table.add_column("Detail", overflow="fold")
+    table.add_column("Output", overflow="fold")
+
+    for r in results:
+        status_color = {
+            "good": "green",
+            "fixed": "green",
+            "failed": "red",
+            "skip": "yellow",
+            "ok": "green",
+        }.get(r["status"], "white")
+        table.add_row(
+            Path(r["file"]).name,
+            f"[{status_color}]{r['status']}[/{status_color}]",
+            r["detail"],
+            r["fixed_path"],
         )
-        error_table.add_column("File", style="cyan", width=30)
-        error_table.add_column("Error", style="red", width=50)
-        
-        for filename, error in ERRORS[:5]:  # Show first 5 errors
-            error_table.add_row(filename, error[:70] + "..." if len(error) > 70 else error)
-        
-        if len(ERRORS) > 5:
-            console.print(error_table)
-            console.print(f"[yellow]... and {len(ERRORS) - 5} more errors (check log for details)[/yellow]")
-        else:
-            console.print(error_table)
-        
-        # Save full error log
-        log_path = output_folder / "processing_errors.log"
-        with open(log_path, "w") as f:
-            for filename, error in ERRORS:
-                f.write(f"=== {filename} ===\n{error}\n\n")
-        
-        console.print(f"\n[italic]Full error log saved to: {log_path}[/italic]")
-    else:
-        console.print("\n[green]All videos processed successfully! 🎉[/green]")
-    
-    console.print(f"\n[bold]Output saved to:[/bold] {output_folder}")
+
+    console.print(table)
+
+    summary = (
+        f"[green]good={counts.get('good',0)}[/green], "
+        f"[green]fixed={counts.get('fixed',0)}[/green], "
+        f"[yellow]skip={counts.get('skip',0)}[/yellow], "
+        f"[red]failed={counts.get('failed',0)}[/red]"
+    )
+    console.print(Padding(f"Summary: {summary}", (1, 0, 0, 0)))
+
+    if counts.get("skip", 0) > 0:
+        console.print(
+            "[yellow]Tip:[/yellow] Skipped items look like DASH or HLS fragments. "
+            "You usually need the manifest (MPD or M3U8) or the init segment to reconstruct a playable file."
+        )
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        console.print("\n[red]Processing interrupted by user[/red]")
-        sys.exit(1)
+    main()
