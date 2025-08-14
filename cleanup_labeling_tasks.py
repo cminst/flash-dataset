@@ -300,7 +300,15 @@ class LabelingTaskCleaner:
                 'revised_caption'
             ])
 
-            dataset = dataset.shuffle(seed=42)
+            # Make data types more reasonable
+            def map_function(example):
+                return {
+                    "row_id": int(example['row_id']),
+                    "action_score": float(example['action_score']),
+                    "peaks": json.loads(example['peaks']) if example['peaks'] else []
+                }
+
+            dataset = dataset.map(map_function).shuffle(seed=42)
 
             # Push to hub
             dataset.push_to_hub(self.huggingface_dataset, private=True)
