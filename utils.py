@@ -91,7 +91,7 @@ def plot_peak_dataset_stats(dataset):
     if durations and thumos_durations:
         min_duration = min(min(durations), min(thumos_durations))
         max_duration = max(max(durations), max(thumos_durations))
-        bins = 40
+        bins = 30
 
         # Plot histograms as percentages
         ax3.hist(durations, bins=bins, range=(min_duration, max_duration),
