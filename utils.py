@@ -130,8 +130,10 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
 
     # Plot 4: Duration Comparison Boxplot (Bottom-Right)
     if durations and thumos_durations:
+        labels = [f'FLASH ({sum(durations) / len(durations):.1f})',
+                  f'THUMOS\'14 ({sum(thumos_durations) / len(thumos_durations):.1f})']
         ax[1,1].boxplot([durations, thumos_durations],
-                        labels=['FLASH', 'THUMOS\'14'],
+                        labels=labels,
                         patch_artist=True,
                         boxprops=dict(facecolor='lightblue', color='black'),
                         medianprops=dict(color='red', linewidth=2))
