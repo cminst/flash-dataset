@@ -115,10 +115,24 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
         max_duration = max(max(durations), max(thumos_durations))
         bins = 40
 
-        ax[1,0].hist(durations, bins=bins, range=(min_duration, max_duration),
-                     alpha=0.7, color='red', label='Our Dataset', density=True)
-        ax[1,0].hist(thumos_durations, bins=bins, range=(min_duration, max_duration),
-                     alpha=0.7, color='purple', label='THUMOS\'14', density=True)
+        ax[1,0].hist(
+            durations,
+            bins=bins,
+            range=(min_duration, max_duration),
+            alpha=0.7,
+            color='green',
+            label='Our Dataset',
+            density=True
+        )
+        ax[1,0].hist(
+            thumos_durations,
+            bins=bins,
+            range=(min_duration, max_duration),
+            alpha=0.7,
+            color='red',
+            label='THUMOS\'14',
+            density=True
+        )
         ax[1,0].set_title('Action Duration Distribution Comparison')
         ax[1,0].set_xlabel('Duration (seconds)')
         ax[1,0].set_ylabel('Percentage of Videos')
@@ -129,11 +143,13 @@ def plot_peak_dataset_stats(dataset, thumos_duration_cap: int = 40):
     # Plot 4: Duration Comparison Boxplot (Bottom-Right)
     if durations and thumos_durations:
         labels = ['FLASH', "THUMOS'14"]
-        ax[1,1].boxplot([durations, thumos_durations],
-                        labels=labels,
-                        patch_artist=True,
-                        boxprops=dict(facecolor='lightblue', color='black'),
-                        medianprops=dict(color='red', linewidth=2))
+        ax[1,1].boxplot(
+            [durations, thumos_durations],
+            labels=labels,
+            patch_artist=True,
+            boxprops=dict(facecolor='lightblue', color='black'),
+            medianprops=dict(color='red', linewidth=2)
+        )
         ax[1,1].set_title('Action Duration Comparison (Boxplot)')
         ax[1,1].set_ylabel('Duration (seconds)')
         ax[1,1].set_ylim(bottom=-0.5, top=20)
