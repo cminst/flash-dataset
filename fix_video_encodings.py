@@ -307,5 +307,17 @@ def main():
             "You usually need the manifest (MPD or M3U8) or the init segment to reconstruct a playable file."
         )
 
+    # Print a clean list of failed files at the end
+    failed_files = [Path(r["file"]) for r in results if r["status"] == "failed"]
+    if failed_files:
+        console.print(Padding("\n[red]Failed files (clean list):[/red]", (1, 0, 0, 0)))
+        for fp in failed_files:
+            try:
+                # Prefer paths relative to the scanned root for readability
+                rel = fp.relative_to(root)
+                console.print(str(rel))
+            except Exception:
+                console.print(str(fp))
+
 if __name__ == "__main__":
     main()
