@@ -9,15 +9,13 @@ import json
 import argparse
 import sys
 from pathlib import Path
-from typing import List, Dict, Any, Tuple, Set
+from typing import List, Dict, Any, Tuple
 from dataclasses import dataclass
 import re
 
 from rich.console import Console
-from rich.table import Table
-from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
+from rich.progress import Progress
 from rich.panel import Panel
-from rich.text import Text
 import logging
 
 # Set up logging
@@ -56,9 +54,23 @@ class LabelingTaskCleaner:
         # Load reference dataset for true time calculation
         self.timing_data = self._load_timing_data()
 
+        # Define failed video files to exclude
+        self.failed_files = {
+            "downloaded_clips/1PQiq8zajCE_29423.mp4",
+            "downloaded_clips/DEt_Xgg8dzc_8415.mp4",
+            "downloaded_clips/g-KEU43sCt4_24626.mp4",
+            "downloaded_clips/gyCXP8w8GRA_8210.mp4",
+            "downloaded_clips/jhakEVLCqNM_12707.mp4",
+            "downloaded_clips/nmUJ2GfVkKY_1123.mp4",
+            "downloaded_clips/zcdJNPYkIE0_22123.mp4",
+            "downloaded_clips/zuqNxHmtBD8_12877.mp4",
+            "downloaded_clips/zuqNxHmtBD8_39283.mp4"
+        }
+
         # Statistics tracking
         self.stats = {
             'total_rows': 0,
+            'excluded_failed_files': 0,
             'rows_with_peaks': 0,
             'total_peaks': 0,
             'removed_overlaps': 0,
@@ -109,6 +121,10 @@ class LabelingTaskCleaner:
             console.print(f"[yellow]Error loading reference dataset: {e}[/yellow]")
             console.print("[yellow]Using relative timing instead.[/yellow]")
             return {}
+
+    def is_failed_file(self, video_path: str) -> bool:
+        """Check if the video path is in the failed files list"""
+        return video_path in self.failed_files
 
     def extract_video_info(self, video_path: str) -> Tuple[str, str, float, float]:
         """Extract video ID, row ID and original timing from video path"""
@@ -338,10 +354,16 @@ class LabelingTaskCleaner:
             ):
                 self.stats['total_rows'] += 1
 
+                # Check if this is a failed file that should be excluded
+                video_path = row.get('video', '')
+                if self.is_failed_file(video_path):
+                    self.stats['excluded_failed_files'] += 1
+                    continue
+
                 # Parse peaks
                 peaks = self.parse_peaks_from_string(
                     row.get('peaks', '[]'),
-                    row.get('video', ''),
+                    video_path,
                     row.get('row_id', '0')
                 )
 
@@ -395,6 +417,7 @@ class LabelingTaskCleaner:
         console.print("\n[bold blue]Cleanup Summary[/bold blue]")
         console.print(Panel(
             f"""Total rows processed: {self.stats['total_rows']}
+Excluded failed files: {self.stats['excluded_failed_files']}
 Rows with peaks: {self.stats['rows_with_peaks']}
 Original peaks: {self.stats['total_peaks']}
 Removed overlapping peaks: {self.stats['removed_overlaps']}
