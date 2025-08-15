@@ -19,6 +19,10 @@ FLASH is an open-source video evaluation dataset that tests a model's ability to
 
 We compare our dataset to the THUMOS'14 temporal action localization evaluation dataset. Our results are as follows:
 
+<div align="center">
+  <img src="https://cdn-uploads.huggingface.co/production/uploads/66d78facde54fea8a009927e/Xrkq9zn_k90XhMR8OH1SD.png" width="900px">
+</div>
+
 ```
                       +----------------------------------------------------+
                       |          Statistics for Peak Duration              |
