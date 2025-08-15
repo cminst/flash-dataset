@@ -7,7 +7,7 @@
 <br>
 
 <div align="center" style="line-height: 1;">
-  <a href="[https://github.com/ChenxinAn-fdu/POLARIS](https://huggingface.co/datasets/qingy2024/FLASH-Dataset)" style="margin: 2px;">
+  <a href="https://huggingface.co/datasets/qingy2024/FLASH-Dataset" style="margin: 2px;">
     <img alt="HuggingFace Dataset" src="https://img.shields.io/badge/HuggingFace-000000?style=for-the-badge&logo=huggingface&logoColor=000&logoColor=white" style="display: inline-block; vertical-align: middle;"/>
   </a>
 </div>
